@@ -502,7 +502,7 @@
         dd.clauses.splice(idx, 1); boxSave(dd); renderMyBox();
       });
       var wrap = document.createElement("div");
-      wrap.style.display = "flex"; wrap.style.gap = "6px"; wrap.style.alignItems = "flex-start";
+      wrap.className = "clause-row";
       wrap.appendChild(chip); wrap.appendChild(del);
       grid.appendChild(wrap);
     });
@@ -752,7 +752,7 @@
         "<input id='" + f[0] + "' value=\"" + esc(v) + "\"></div>";
     }).join("");
     $("field-grid").innerHTML +=
-      "<div style='grid-column:1/-1'><label for='f-extra'>특약사항 (선택)</label>" +
+      "<div class='extra-field'><label for='f-extra'>특약사항 (선택)</label>" +
       "<textarea id='f-extra' rows='3' placeholder='추가로 정할 조건을 쉼표로 구분해 입력'></textarea></div>";
     showSkeleton();
   }
@@ -931,7 +931,7 @@ return "계약조건";
     m.paras.forEach(function (p) {
       if (p.kind === "article") html += "<div class='art-title'>" + esc(p.text) + "</div>";
       else if (p.kind === "meta") html += "<p class='hint'>" + esc(p.text) + "</p>";
-      else html += "<p class='sec'" + (p.right ? " style='text-align:right'" : "") + ">" + esc(p.text) + "</p>";
+      else html += "<p class='sec" + (p.right ? " sec-right" : "") + "'>" + esc(p.text) + "</p>";
     });
     $("doc").innerHTML = html;
   }

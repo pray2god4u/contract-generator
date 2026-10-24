@@ -98,3 +98,24 @@ textarea{border:1px solid #c9d3e1;border-radius:4px;min-height:120px;width:100%;
 .doc-box h3{margin:0 0 4px}
 .doc-box .art-title{font-weight:700;margin:14px 0 4px}
 .doc-box .sec{margin:4px 0}
+.doc .sec-right,.doc-box .sec-right{text-align:right}
+/* 인라인 스타일 정리 — 사이드바 소제목·특약 칩·입력 행 */
+.side-h3{font-size:14px;margin:14px 0 6px}
+.clause-row{display:flex;gap:6px;align-items:flex-start}
+.clause-chip{font:inherit;cursor:pointer;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:4px 12px;font-size:12px;line-height:1.5;color:#324254;word-break:break-all}
+.clause-chip:hover{border-color:var(--blue);color:var(--blue)}
+.clause-del{min-height:26px;padding:2px 8px;font-size:12px;color:#c0392b;border-color:#e2c8c5}
+.clause-del:hover{border-color:#c0392b;color:#c0392b}
+.clause-input-row{display:flex;gap:8px;margin-top:8px}
+.clause-input-row input{flex:1}
+.fmt-select{width:auto;min-width:150px}
+.ai-url-field{grid-column:1/-1}
+.extra-field{grid-column:1/-1}
+.th-menu{width:120px}.th-test{width:32%}.th-symptom{width:36%}
+.brand-sub{font-weight:400;color:#647693}
+/* 폼 세부 보정 */
+.field-grid input[type=checkbox]{width:auto;min-width:0;margin-top:7px;accent-color:var(--blue)}
+.field-grid input[type=number]{width:100%}
+select{max-width:100%}
+.doc-box h3{font-size:18px;text-align:center}
+.doc-box .doc-sub{text-align:center;color:#647693;font-size:12px;margin-bottom:16px}

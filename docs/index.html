@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v4.4</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v4.5</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
     <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
@@ -65,7 +65,7 @@
         <div id="instant-doc" class="doc-box"></div>
         <div class="toolbar">
           <button class="primary" id="btn-instant-open">📄 서식 탐색에서 열기</button>
-          <select id="fmt-instant" style="width:auto;min-width:150px">
+          <select id="fmt-instant" class="fmt-select">
             <option value="docx">DOCX (워드)</option>
             <option value="hwpx">HWPX (한글)</option>
             <option value="txt">TXT (텍스트)</option>
@@ -84,14 +84,14 @@
       <div class="toolbar">
         <button id="btn-box-clear">서식함 비우기</button>
       </div>
-      <h3 style="font-size:14px;margin:14px 0 6px">⭐ 즐겨찾기 서식</h3>
+      <h3 class="side-h3">⭐ 즐겨찾기 서식</h3>
       <div class="result-list" id="fav-list"></div>
-      <h3 style="font-size:14px;margin:14px 0 6px">🕘 작성 이력</h3>
+      <h3 class="side-h3">🕘 작성 이력</h3>
       <div class="result-list" id="hist-list"></div>
-      <h3 style="font-size:14px;margin:14px 0 6px">📌 자주 쓰는 특약 조항</h3>
+      <h3 class="side-h3">📌 자주 쓰는 특약 조항</h3>
       <div class="field-grid" id="clause-grid"></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="clause-input" placeholder="새 특약 조항 추가 (예: 분쟁 시 서울중앙지방법원 관할)" style="flex:1">
+      <div class="clause-input-row">
+        <input id="clause-input" placeholder="새 특약 조항 추가 (예: 분쟁 시 서울중앙지방법원 관할)">
         <button id="btn-clause-add" class="primary">추가</button>
       </div>
     </div>
@@ -116,7 +116,7 @@
 
       <h3 class="g-h">📋 메뉴별 사용법·테스트</h3>
       <table class="g-table">
-        <tr><th style="width:120px">메뉴</th><th>이렇게 쓰세요</th><th style="width:32%">이렇게 테스트</th></tr>
+        <tr><th class="th-menu">메뉴</th><th>이렇게 쓰세요</th><th class="th-test">이렇게 테스트</th></tr>
         <tr><td><b>서식 탐색</b></td><td>검색어·대분류·중분류·데이터셋(71834 계약 / 71835 계약 외)로 18,436건에서 서식을 찾습니다. <span class="badge purple">구조템플릿</span> 배지는 실제 원문 구조를 추출한 52개 서식입니다.</td><td>검색창에 <code>임대차</code> 입력 → 목록 클릭 → 입력 폼·구조 미리보기 표시 확인</td></tr>
         <tr><td><b>AI 계약서 검토</b></td><td>계약서 전문을 붙여넣고(50자 이상) 「🔍 AI 검토 시작」 — [요약]/[리스크]/[누락]/[종합] 형식으로 분석합니다.</td><td>아래 「샘플 계약서 불러와서 검토 테스트」 버튼으로 바로 실행</td></tr>
         <tr><td><b>AI 바로 생성</b></td><td>자연어 한 줄(10자 이상)로 요청하면 AI가 문서 유형을 판단하고 조항 6~10개 초안을 작성합니다.</td><td>아래 프롬프트의 「이 프롬프트로 생성 →」 버튼으로 바로 실행</td></tr>
@@ -137,7 +137,7 @@
 
       <h3 class="g-h">❓ 자주 묻는 질문</h3>
       <table class="g-table">
-        <tr><th style="width:36%">증상</th><th>해결</th></tr>
+        <tr><th class="th-symptom">증상</th><th>해결</th></tr>
         <tr><td>AI 검토·바로 생성이 실패한다</td><td>사내망인지 확인하세요(genai.douzone.com 접근 가능한 네트워크). 사외망에서는 실패가 정상이며, 「초안 생성」(규칙 기반)은 어디서든 동작합니다.</td></tr>
         <tr><td>저장한 파일이 안 보인다</td><td>하단 상태줄에서 저장 폴더 연결 여부를 확인하세요. 미연결 시 브라우저 다운로드로 저장됩니다.</td></tr>
         <tr><td>「저장 폴더 연결」이 안 눌린다</td><td>Chrome·Edge 등 File System Access API 지원 브라우저가 필요합니다. Safari·모바일은 다운로드로 대체됩니다.</td></tr>
@@ -175,7 +175,7 @@
         <div class="toolbar">
           <button class="primary" id="btn-generate">초안 생성</button>
           <button class="primary ai" id="btn-ai" title="사내 GenAI(dsm-120b)로 실제 조문을 작성합니다">✨ AI 초안 생성</button>
-          <select id="fmt" style="width:auto;min-width:150px">
+          <select id="fmt" class="fmt-select">
             <option value="docx">DOCX (워드)</option>
             <option value="hwpx">HWPX (한글)</option>
             <option value="txt">TXT (텍스트)</option>
@@ -188,7 +188,7 @@
         <details class="ai-config" id="ai-config">
           <summary>AI 연결 설정 (사내 GenAI)</summary>
           <div class="field-grid">
-            <div style="grid-column:1/-1"><label for="ai-url">요청 URL</label><input id="ai-url"></div>
+            <div class="ai-url-field"><label for="ai-url">요청 URL</label><input id="ai-url"></div>
             <div><label for="ai-model">모델</label><input id="ai-model"></div>
             <div><label for="ai-temp">temperature (0~1)</label><input id="ai-temp" type="number" min="0" max="1" step="0.05"></div>
             <div><label for="ai-maxtok">max_tokens</label><input id="ai-maxtok" type="number" min="256" max="16384" step="256"></div>
@@ -246,11 +246,11 @@
 을: (주)새로움테크 (대표자 박새로움) (인)
 </script>
 
-<script src="vendor/docx.umd.js?v=9"></script>
-<script src="vendor/jszip.min.js?v=9"></script>
-<script src="vendor/hwpx_assets.js?v=9"></script>
-<script src="data/index.js?v=9"></script>
-<script src="data/templates.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="vendor/docx.umd.js?v=10"></script>
+<script src="vendor/jszip.min.js?v=10"></script>
+<script src="vendor/hwpx_assets.js?v=10"></script>
+<script src="data/index.js?v=10"></script>
+<script src="data/templates.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
