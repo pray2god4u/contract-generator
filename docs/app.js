@@ -50,11 +50,13 @@
       $(id).addEventListener("change", render);
     });
     $("btn-generate").addEventListener("click", generate);
+    $("btn-ai").addEventListener("click", aiGenerate);
     $("btn-save").addEventListener("click", saveDoc);
     $("btn-connect-folder").addEventListener("click", connectFolder);
     $("btn-copy").addEventListener("click", copyDraft);
     $("btn-print").addEventListener("click", function () { window.print(); });
     restoreFolder();
+    restoreAiCfg();
     render();
   }
 
@@ -131,6 +133,183 @@
         });
       }).then(function () { return true; });
     }).catch(function () { return false; });
+  }
+
+  /* ---------- AI 연결 설정 (사내 GenAI) ---------- */
+  var AI_DEFAULTS = {
+    url: "https://genai.douzone.com/api/etos-120b/v1/chat/completions",
+    model: "dsm-120b",
+    temp: "0.3",
+    maxtok: "4096"
+  };
+  function aiCfg() {
+    return {
+      url: ($("ai-url").value || AI_DEFAULTS.url).trim(),
+      model: ($("ai-model").value || AI_DEFAULTS.model).trim(),
+      temp: parseFloat($("ai-temp").value || AI_DEFAULTS.temp) || 0.3,
+      maxtok: parseInt($("ai-maxtok").value || AI_DEFAULTS.maxtok, 10) || 4096
+    };
+  }
+  function saveAiCfg() {
+    try {
+      localStorage.setItem("cg_ai_cfg", JSON.stringify({
+        url: $("ai-url").value, model: $("ai-model").value,
+        temp: $("ai-temp").value, maxtok: $("ai-maxtok").value
+      }));
+    } catch (e) { /* 사설모드 등 */ }
+  }
+  function restoreAiCfg() {
+    var el = $("ai-url");
+    if (!el) return;
+    el.value = AI_DEFAULTS.url;
+    $("ai-model").value = AI_DEFAULTS.model;
+    $("ai-temp").value = AI_DEFAULTS.temp;
+    $("ai-maxtok").value = AI_DEFAULTS.maxtok;
+    try {
+      var saved = JSON.parse(localStorage.getItem("cg_ai_cfg") || "{}");
+      if (saved.url) el.value = saved.url;
+      if (saved.model) $("ai-model").value = saved.model;
+      if (saved.temp) $("ai-temp").value = saved.temp;
+      if (saved.maxtok) $("ai-maxtok").value = saved.maxtok;
+    } catch (e) { /* 무시 */ }
+    ["ai-url", "ai-model", "ai-temp", "ai-maxtok"].forEach(function (id) {
+      $(id).addEventListener("change", saveAiCfg);
+    });
+  }
+
+  /* ---------- AI 초안 생성 (사내 GenAI) ---------- */
+  function buildAiPrompt(rec, secs, vals) {
+    var structure = secs.map(function (s) {
+      var art = parseInt(s.art, 10);
+      var line = "- [" + s.ft + "]";
+      if (!isNaN(art) && art > 0) line += " 제" + art + "조";
+      if (s.hint) line += " " + s.hint;
+      return line;
+    }).join("\n");
+    var sys = "당신은 대한민국 법률 문서 작성 전문가입니다. 주어진 문서 구조와 기본 정보를 바탕으로 실제 사용 가능한 수준의 계약서/법률 문서 초안을 한국어로 작성합니다.\n" +
+      "규칙:\n" +
+      "1. 첫 줄에 문서 제목만 출력하고, 각 조항은 '제N조 (조문제목)' 형태의 줄로 시작하며 그 아래 본문 문단을 작성합니다.\n" +
+      "2. 조문 번호는 주어진 구조의 순서를 따르며 누락 없이 재번호화합니다. 항 번호는 ①②③을 사용합니다.\n" +
+      "3. 계약서라면 서두(갑·을 표시와 계약 체결 문언)와 말미(계약일, 서명란)를 반드시 포함합니다.\n" +
+      "4. 입력된 기본 정보(당사자, 금액, 기간 등)를 문장에 정확히 반영하고, 미입력값은 '____' 빈칸으로 둡니다.\n" +
+      "5. 특약사항 입력이 있으면 마지막 조로 포함합니다.\n" +
+      "6. 설명·주석·사족 없이 문서 본문만 출력합니다. 마크다운 기호(#, *, -)를 쓰지 않습니다.";
+    var user = "문서 유형: " + (rec.ds === "71835" ? "계약 외 법률 문서" : "계약서") + "\n" +
+      "서식명: " + rec.t + "\n" +
+      "분류: " + rec.mc + " > " + rec.sc + " > " + rec.dc + "\n" +
+      "관련법령: " + (rec.law || "미명시") + "\n\n" +
+      "기본 정보:\n" +
+      "- 갑(발주자/매도인): " + vals.a + " (대표자 " + vals.ra + ")\n" +
+      "- 을(수급자/매수인): " + vals.b + " (대표자 " + vals.rb + ")\n" +
+      "- 계약금액: " + vals.amount + "\n" +
+      "- 계약기간: " + vals.period + "\n" +
+      "- 계약일: " + koDate(vals.date) + " / 체결 장소: " + vals.place + "\n" +
+      "- 특약사항: " + (vals.extra || "없음") + "\n\n" +
+      "문서 구조(이 순서와 역할을 따르세요):\n" + structure;
+    return [{ role: "system", content: sys }, { role: "user", content: user }];
+  }
+
+  function callLLM(cfg, messages, onDelta) {
+    return fetch(cfg.url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: messages,
+        max_tokens: cfg.maxtok,
+        temperature: cfg.temp,
+        top_p: 0.8,
+        stream: true,
+        reasoning_effort: "low"
+      })
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.text().then(function (t) {
+          throw new Error("HTTP " + res.status + " " + String(t).slice(0, 120));
+        });
+      }
+      var reader = res.body.getReader();
+      var dec = new TextDecoder("utf-8");
+      var buf = "", full = "";
+      function pump() {
+        return reader.read().then(function (r) {
+          if (r.done) return full;
+          buf += dec.decode(r.value, { stream: true });
+          var lines = buf.split("\n");
+          buf = lines.pop();
+          lines.forEach(function (ln) {
+            ln = ln.trim();
+            if (ln.indexOf("data:") !== 0) return;
+            var payload = ln.slice(5).trim();
+            if (!payload || payload === "[DONE]") return;
+            try {
+              var j = JSON.parse(payload);
+              var d = j.choices && j.choices[0] && j.choices[0].delta;
+              if (d && d.content) { full += d.content; if (onDelta) onDelta(full); }
+            } catch (e) { /* 아직 온전하지 않은 조각 무시 */ }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    });
+  }
+
+  function parseAiDraft(text, rec) {
+    var lines = String(text).replace(/\r/g, "").split("\n");
+    var paras = [];
+    var title = rec.t;
+    var i = 0;
+    while (i < lines.length && !lines[i].trim()) i++;
+    if (i < lines.length) { title = lines[i].trim().replace(/^#+\s*/, ""); i++; }
+    for (; i < lines.length; i++) {
+      var ln = lines[i].trim();
+      if (!ln) continue;
+      ln = ln.replace(/^#+\s*/, "").replace(/^\*\*|\*\*$/g, "");
+      if (/^제\d+조/.test(ln)) paras.push({ kind: "article", text: ln });
+      else paras.push({ kind: "body", text: ln });
+    }
+    return { title: title, paras: paras };
+  }
+
+  function aiGenerate() {
+    if (!state.selected) { toast("먼저 왼쪽에서 서식을 선택하세요."); return; }
+    var cfg = aiCfg();
+    state.vals = collectVals();
+    var rec = state.selected;
+    if (!state.skeleton) state.skeleton = tplById[rec.id] ? tplById[rec.id].sections : genericSections(rec);
+    var messages = buildAiPrompt(rec, state.skeleton, state.vals);
+    var btn = $("btn-ai");
+    btn.disabled = true;
+    $("doc").innerHTML = "<h3>AI 초안 생성 중…</h3><p class='doc-sub'>사내 GenAI(" + esc(cfg.model) +
+      ")가 조문을 작성하고 있어요. 최대 수십 초가 걸릴 수 있습니다.</p><pre class='ai-stream' id='ai-stream'></pre>";
+    var started = Date.now();
+    callLLM(cfg, messages, function (partial) {
+      var el = $("ai-stream");
+      if (el) el.textContent = partial.slice(-1200);
+    }).then(function (full) {
+      btn.disabled = false;
+      var parsed = parseAiDraft(full, rec);
+      if (!parsed.paras.length) throw new Error("AI 응답에서 조문을 찾지 못했습니다.");
+      if (!parsed.title || parsed.title.length < 5 || /^(계약서|계약서\s?초안|문서|draft)$/i.test(parsed.title)) {
+        parsed.title = rec.t.replace(/_\d+$/, "");
+      }
+      state.filled = true;
+      state.model = {
+        title: parsed.title,
+        metaLine: "분류: " + rec.mc + " › " + rec.sc + " › " + rec.dc +
+          " · 관련법령: " + (rec.law || "미명시") + " · 출처: AI 허브(" + rec.ds + ", aihub.or.kr) · AI 초안(" +
+          cfg.model + ", " + Math.round((Date.now() - started) / 1000) + "초)",
+        paras: parsed.paras,
+        isContract: rec.ds !== "71835"
+      };
+      renderModel();
+      toast("AI 초안 생성 완료! 문서 파일로 저장할 수 있어요.");
+    }).catch(function (e) {
+      btn.disabled = false;
+      $("doc").innerHTML = "<h3>AI 생성 실패</h3><p class='hint'>" + esc(e.message) +
+        "</p><p class='hint'>사내망에서 접속했는지, AI 연결 설정의 요청 URL이 맞는지 확인하세요. 「초안 생성」(규칙 기반)은 계속 사용할 수 있습니다.</p>";
+    });
   }
 
   function sumSc(mc) {
@@ -575,7 +754,8 @@ return "계약조건";
       buildDocModel: buildDocModel, buildDocxChildren: buildDocxChildren,
       buildSectionXml: buildSectionXml, makeHwpxFiles: makeHwpxFiles,
       buildTxt: buildTxt, genericSections: genericSections,
-      docBaseName: docBaseName, koDate: koDate
+      docBaseName: docBaseName, koDate: koDate,
+      buildAiPrompt: buildAiPrompt, callLLM: callLLM, parseAiDraft: parseAiDraft
     };
   }
 })();

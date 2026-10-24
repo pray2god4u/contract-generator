@@ -52,6 +52,7 @@
         <div class="field-grid" id="field-grid"></div>
         <div class="toolbar">
           <button class="primary" id="btn-generate">초안 생성</button>
+          <button class="primary ai" id="btn-ai" title="사내 GenAI(dsm-120b)로 실제 조문을 작성합니다">✨ AI 초안 생성</button>
           <select id="fmt" style="width:auto;min-width:150px">
             <option value="docx">DOCX (워드)</option>
             <option value="hwpx">HWPX (한글)</option>
@@ -62,6 +63,16 @@
           <button id="btn-copy">복사</button>
           <button id="btn-print">인쇄</button>
         </div>
+        <details class="ai-config" id="ai-config">
+          <summary>AI 연결 설정 (사내 GenAI)</summary>
+          <div class="field-grid">
+            <div style="grid-column:1/-1"><label for="ai-url">요청 URL</label><input id="ai-url"></div>
+            <div><label for="ai-model">모델</label><input id="ai-model"></div>
+            <div><label for="ai-temp">temperature (0~1)</label><input id="ai-temp" type="number" min="0" max="1" step="0.05"></div>
+            <div><label for="ai-maxtok">max_tokens</label><input id="ai-maxtok" type="number" min="256" max="16384" step="256"></div>
+          </div>
+          <p class="count">사내망에서만 동작합니다. 설정은 이 브라우저에만 저장됩니다.</p>
+        </details>
         <p class="count" id="save-folder-status"></p>
       </div>
       <div class="doc" id="doc">
