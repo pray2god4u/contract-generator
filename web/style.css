@@ -1,0 +1,59 @@
+/* 계약서 초안 생성기 — 참고: public-sales-insight-coach 디자인 시스템 */
+:root{font-family:Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#202a38;background:#f6f8fc;letter-spacing:0;font-size:14px;--blue:#146ac7;--purple:#7258b6;--line:#dce3ed}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}
+header{min-height:76px;padding:16px 32px;display:flex;justify-content:space-between;align-items:center;gap:20px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:20px;font-weight:700;color:#263341;text-decoration:none}
+.brand .logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800}
+.brand span{border-left:1px solid var(--line);padding-left:20px}
+nav{display:flex;gap:20px;flex-wrap:wrap}
+nav a{color:#536278;text-decoration:none}
+nav a:hover{color:var(--blue)}
+main{max-width:1440px;margin:0 auto;padding:30px 32px 60px}
+h1{font-size:24px;line-height:1.4;margin:4px 0 24px}
+h2{font-size:18px;line-height:1.4;margin:24px 0 16px}
+.eyebrow{color:#647693;font-size:11px;font-weight:700;margin:0}
+.lead{color:#536278;margin:0 0 24px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:0 0 28px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 18px}
+.metric b{display:block;font-size:22px;color:var(--blue)}
+.metric span{color:#647693;font-size:12px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+@media(max-width:960px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px}
+.panel h2{margin-top:0}
+label{display:block;font-weight:600;margin:14px 0 8px}
+input,select,textarea{font:inherit;color:inherit;background:#fff;border:1px solid #c9d3e1;border-radius:4px;padding:10px 12px;min-height:42px;max-width:100%}
+input:not([type=checkbox]),select{width:100%}
+textarea{width:100%;font:12px/1.6 monospace;resize:vertical}
+button,.action{font:inherit;cursor:pointer;border-radius:4px;line-height:1.4;min-height:40px;padding:9px 14px;border:1px solid #c9d3e1;background:#fff;color:#324254;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;gap:8px}
+button.primary,.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+button:hover,.action:hover{border-color:var(--blue);color:var(--blue)}
+button.primary:hover{background:#0f57a5;color:#fff}
+.search-row{display:flex;gap:10px;margin-bottom:14px}
+.search-row input{flex:1}
+.badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;background:#eef3fb;color:var(--blue);border:1px solid #d3e2f5}
+.badge.purple{background:#f3effb;color:var(--purple);border-color:#e0d6f3}
+.badge.gray{background:#f1f4f9;color:#647693;border-color:#e2e8f1}
+.result-list{max-height:520px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.result-item{border:1px solid var(--line);border-radius:6px;padding:12px 14px;cursor:pointer;background:#fff}
+.result-item:hover{border-color:var(--blue)}
+.result-item.active{border-color:var(--blue);background:#f4f9ff}
+.result-item b{display:block;margin-bottom:4px}
+.result-item .meta{color:#647693;font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+.doc{background:#fff;border:1px solid var(--line);border-radius:8px;padding:36px 44px;min-height:600px}
+.doc h3{text-align:center;font-size:20px;margin:0 0 6px}
+.doc .doc-sub{text-align:center;color:#647693;font-size:12px;margin-bottom:24px}
+.doc article{margin:14px 0}
+.doc .art-title{font-weight:700;margin:18px 0 6px}
+.doc .sec{margin:6px 0;line-height:1.8}
+.doc .sec .no{display:inline-block;min-width:22px}
+.doc .hint{color:#8a97ab;font-size:12px}
+.doc .blank{display:inline-block;min-width:120px;border-bottom:1px solid #b9c4d4;margin:0 4px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:10px 0 18px}
+.field-grid label{margin:0}
+.field-grid input{margin-top:6px}
+footer{border-top:1px solid var(--line);background:#fff;padding:20px 32px;color:#647693;font-size:12px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#202a38;color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:.95}
+.count{color:#647693;font-size:12px;margin:8px 0}

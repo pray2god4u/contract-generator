@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="./">
+    <div class="logo">계</div>
+    <span>계약서 초안 생성기<br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
+  </a>
+  <nav>
+    <a href="#browse">서식 탐색</a>
+    <a href="#draft">초안 생성</a>
+    <a href="https://www.aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=data&dataSetSn=71834" target="_blank" rel="noopener">데이터 출처</a>
+  </nav>
+</header>
+
+<main>
+  <p class="eyebrow">AI HUB 법률 문서 서식 데이터 기반</p>
+  <h1>계약서 초안 생성기</h1>
+  <p class="lead">AI Hub 「계약 법률 문서 서식」·「계약 외 법률 문서 서식」 데이터의 구조를 학습해 만든 서식 안내 도구입니다. 로그인 없이 자유롭게 사용하세요.</p>
+
+  <div class="metrics" id="metrics"></div>
+
+  <section id="browse" class="layout">
+    <div class="panel">
+      <h2>서식 검색</h2>
+      <div class="search-row">
+        <input id="q" type="search" placeholder="제목·법령 검색 (예: 매매, 임대차)">
+      </div>
+      <label for="mc">대분류</label>
+      <select id="mc"><option value="">전체</option></select>
+      <label for="sc">중분류</label>
+      <select id="sc"><option value="">전체</option></select>
+      <label for="ds">데이터셋</label>
+      <select id="ds">
+        <option value="">전체</option>
+        <option value="71834">71834 · 계약 법률 문서</option>
+        <option value="71835">71835 · 계약 외 법률 문서</option>
+      </select>
+      <p class="count" id="count"></p>
+      <div class="result-list" id="results"></div>
+    </div>
+
+    <div>
+      <div class="panel" id="fields-panel" hidden>
+        <h2>기본 정보 입력</h2>
+        <div class="field-grid" id="field-grid"></div>
+        <div class="toolbar">
+          <button class="primary" id="btn-generate">초안 생성</button>
+          <button id="btn-copy">복사</button>
+          <button id="btn-print">인쇄</button>
+        </div>
+      </div>
+      <div class="doc" id="doc">
+        <h3>서식을 선택하세요</h3>
+        <p class="doc-sub">왼쪽 목록에서 서식을 고르면 구조와 기재 안내가 표시됩니다.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div>데이터 출처: AI 허브(aihub.or.kr) — 계약 법률 문서 서식 데이터(71834) · 계약 외 법률 문서 서식 데이터(71835)</div>
+  <div>본 사이트는 구조 기반 2차 서식 안내만 제공하며 원문을 재배포하지 않습니다.</div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script src="data/index.js"></script>
+<script src="data/templates.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
