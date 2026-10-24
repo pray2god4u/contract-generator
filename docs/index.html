@@ -4,19 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v4.1</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v4.2</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
     <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
     <a href="#review" id="nav-review">AI 계약서 검토</a>
     <a href="#instant" id="nav-instant">AI 바로 생성</a>
     <a href="#mybox" id="nav-mybox">나만의 서식함</a>
+    <a href="#guide" id="nav-guide">사용법</a>
     <a href="https://www.aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=data&dataSetSn=71834" target="_blank" rel="noopener">데이터 출처</a>
   </nav>
 </header>
@@ -86,6 +87,53 @@
     </div>
   </section>
 
+  <section id="guide" hidden>
+    <div class="panel">
+      <h2>사용법 · 테스트 가이드</h2>
+      <p class="count">로그인 없이 누구나 사용할 수 있습니다. 아래 순서대로 따라 하면 각 메뉴를 바로 테스트할 수 있어요.</p>
+
+      <h3 class="g-h">🚀 3분 빠른 시작</h3>
+      <ol class="g-steps">
+        <li><b>서식 탐색</b>에서 검색어(예: 임대차)를 입력하거나 대분류를 골라 목록에서 서식을 클릭합니다.</li>
+        <li>오른쪽 「기본 정보 입력」에 갑·을·금액·기간을 입력하고 <b>「초안 생성」</b>(규칙 기반 — 어디서든 동작) 또는 <b>「✨ AI 초안 생성」</b>(사내망)을 누릅니다.</li>
+        <li>저장 형식(DOCX·HWPX·TXT)을 고르고 <b>「문서 파일 저장」</b> — 처음 1회만 「저장 폴더 연결」로 폴더를 지정하면 이후 그 폴더에 바로 저장됩니다.</li>
+        <li>AI 기능은 상단 탭의 <b>「AI 계약서 검토」·「AI 바로 생성」</b>에서 사용합니다. <span class="badge amber">사내망 전용</span></li>
+      </ol>
+
+      <h3 class="g-h">📋 메뉴별 사용법·테스트</h3>
+      <table class="g-table">
+        <tr><th style="width:120px">메뉴</th><th>이렇게 쓰세요</th><th style="width:32%">이렇게 테스트</th></tr>
+        <tr><td><b>서식 탐색</b></td><td>검색어·대분류·중분류·데이터셋(71834 계약 / 71835 계약 외)로 18,436건에서 서식을 찾습니다. <span class="badge purple">구조템플릿</span> 배지는 실제 원문 구조를 추출한 52개 서식입니다.</td><td>검색창에 <code>임대차</code> 입력 → 목록 클릭 → 입력 폼·구조 미리보기 표시 확인</td></tr>
+        <tr><td><b>AI 계약서 검토</b></td><td>계약서 전문을 붙여넣고(50자 이상) 「🔍 AI 검토 시작」 — [요약]/[리스크]/[누락]/[종합] 형식으로 분석합니다.</td><td>아래 「샘플 계약서 불러와서 검토 테스트」 버튼으로 바로 실행</td></tr>
+        <tr><td><b>AI 바로 생성</b></td><td>자연어 한 줄(10자 이상)로 요청하면 AI가 문서 유형을 판단하고 조항 6~10개 초안을 작성합니다.</td><td>아래 프롬프트의 「이 프롬프트로 생성 →」 버튼으로 바로 실행</td></tr>
+        <tr><td><b>나만의 서식함</b></td><td>서식 목록에서 ☆ 클릭 → 즐겨찾기(★). 저장하면 작성 이력에 자동 기록(최대 30건). 특약 칩 클릭 시 입력란에 바로 들어갑니다.</td><td>목록에서 ☆ 클릭 → 서식함 탭에서 확인 / 특약 추가 후 서식 선택 상태에서 칩 클릭</td></tr>
+      </table>
+
+      <h3 class="g-h">✨ AI 바로 생성 — 클릭 테스트 프롬프트</h3>
+      <p class="count">「이 프롬프트로 생성 →」을 누르면 입력란에 채워지고 바로 생성 탭으로 이동합니다. 복사 버튼으로 원하는 곳에 붙여넣을 수도 있습니다. <b>(사내망 필요)</b></p>
+      <div class="prompt"><span class="ptext">사무실 임대차계약서 만들어줘. 보증금 5,000만원, 월세 50만원, 2026-12-01부터 1년간, 임대인 홍길동, 임차인 (주)테스트컴퍼니</span><span class="pact"><button class="use-btn">이 프롬프트로 생성 →</button><button class="copy-btn">복사</button></span></div>
+      <div class="prompt"><span class="ptext">AI 챗봇 개발 용역계약서 만들어줘. 발주 (주)더존비즈온, 수급 (주)에이아이랩, 계약금액 30,000,000원, 기간 2026-11-02부터 2027-04-30까지, 중간검수 2회 포함</span><span class="pact"><button class="use-btn">이 프롬프트로 생성 →</button><button class="copy-btn">복사</button></span></div>
+      <div class="prompt"><span class="ptext">사무용 노트북 50대 물품구매계약서 만들어줘. 총액 65,000,000원, 납품기한 2026-11-20, 발주 (주)한빛유통, 수급 (주)새로움테크</span><span class="pact"><button class="use-btn">이 프롬프트로 생성 →</button><button class="copy-btn">복사</button></span></div>
+      <div class="prompt"><span class="ptext">비밀유지협정서(NDA) 만들어줘. 갑 (주)알파테크, 을 (주)베타컨설팅, 신규 프로젝트 협력 논의용, 유효기간 2년</span><span class="pact"><button class="use-btn">이 프롬프트로 생성 →</button><button class="copy-btn">복사</button></span></div>
+      <div class="prompt"><span class="ptext">정규직 근로계약서 만들어줘. 근로자 김민수, 월급 3,200,000원, 2026-11-01 입사, 주 5일 근무, 근무지 서울 강남구</span><span class="pact"><button class="use-btn">이 프롬프트로 생성 →</button><button class="copy-btn">복사</button></span></div>
+
+      <h3 class="g-h">🧪 AI 계약서 검토 — 샘플로 테스트</h3>
+      <p class="count">아래 버튼을 누르면 <b>일부러 결함을 넣은 샘플 계약서</b>(지급 시기 모호 · 납품기한 미정 · 갑 일방 해제권 · 위약금/손해배상/관할 조항 누락)가 검토 입력란에 채워집니다. AI가 이 결함들을 잡아내는지 확인해 보세요.</p>
+      <div class="toolbar"><button class="primary ai" id="btn-guide-sample">🧪 샘플 계약서 불러와서 검토 테스트 →</button></div>
+
+      <h3 class="g-h">❓ 자주 묻는 질문</h3>
+      <table class="g-table">
+        <tr><th style="width:36%">증상</th><th>해결</th></tr>
+        <tr><td>AI 검토·바로 생성이 실패한다</td><td>사내망인지 확인하세요(genai.douzone.com 접근 가능한 네트워크). 사외망에서는 실패가 정상이며, 「초안 생성」(규칙 기반)은 어디서든 동작합니다.</td></tr>
+        <tr><td>저장한 파일이 안 보인다</td><td>하단 상태줄에서 저장 폴더 연결 여부를 확인하세요. 미연결 시 브라우저 다운로드로 저장됩니다.</td></tr>
+        <tr><td>「저장 폴더 연결」이 안 눌린다</td><td>Chrome·Edge 등 File System Access API 지원 브라우저가 필요합니다. Safari·모바일은 다운로드로 대체됩니다.</td></tr>
+        <tr><td>바뀐 게 없는 것 같다</td><td>헤더의 버전 배지를 확인하고 강력 새로고침(Cmd+Shift+R / Ctrl+F5)을 하세요.</td></tr>
+        <tr><td>즐겨찾기·이력이 사라졌다</td><td>브라우저·프로필별로 따로 저장됩니다. 시크릿 모드에서는 저장되지 않습니다.</td></tr>
+        <tr><td>생성된 초안을 그대로 써도 되나</td><td>법적 효력 검토는 반드시 변호사 등 전문가와 하세요. 본 도구는 AI Hub 서식 구조 기반의 초안 작성 보조 도구입니다.</td></tr>
+      </table>
+    </div>
+  </section>
+
   <section id="browse" class="layout">
     <div class="panel">
       <h2>서식 검색</h2>
@@ -149,11 +197,46 @@
 </footer>
 <div class="toast" id="toast"></div>
 
-<script src="vendor/docx.umd.js?v=6"></script>
-<script src="vendor/jszip.min.js?v=6"></script>
-<script src="vendor/hwpx_assets.js?v=6"></script>
-<script src="data/index.js?v=6"></script>
-<script src="data/templates.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script type="text/plain" id="sample-contract-text">
+표준 물품구매계약서
+
+계약번호: 제 2026-001 호
+
+갑: (주)한빛유통 (대표자: 김한빛)
+을: (주)새로움테크 (대표자: 박새로움)
+
+제1조 (목적)
+본 계약은 갑이 을로부터 사무용 노트북 50대를 구매하는 데 필요로 하는 제반 사항을 정하는 것을 목적으로 한다.
+
+제2조 (납품 품목)
+납품 품목의 세부 사양, 규격 및 수량은 별도 명세서에 따른다.
+
+제3조 (계약 대금)
+계약 대금은 총 금 65,000,000원(부가세 포함)으로 하며, 갑이 적절한 시기에 을에게 지급한다.
+
+제4조 (납품)
+을은 납품 기한 내에 물품을 갑이 지정하는 장소에 납품한다. 납품 기한은 추후 협의하여 정한다.
+
+제5조 (검수)
+납품된 물품에 대한 검수는 갑의 내부 규정에 따라 실시하며, 검수 기간은 따로 정하지 않는다.
+
+제6조 (계약 해제)
+갑은 필요에 따라 언제든지 일방적으로 본 계약을 해제할 수 있다.
+
+제7조 (기타)
+본 계약에 정하지 아니한 사항은 당사자 간의 협의에 따라 정한다.
+
+2026년 10월 24일
+
+갑: (주)한빛유통 (대표자 김한빛) (인)
+을: (주)새로움테크 (대표자 박새로움) (인)
+</script>
+
+<script src="vendor/docx.umd.js?v=7"></script>
+<script src="vendor/jszip.min.js?v=7"></script>
+<script src="vendor/hwpx_assets.js?v=7"></script>
+<script src="data/index.js?v=7"></script>
+<script src="data/templates.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

@@ -60,8 +60,63 @@
     restoreFolder();
     restoreAiCfg();
     initTabs();
+    initGuide();
     initMyBox();
     render();
+  }
+
+  /* ---------- 사용법 가이드 (프롬프트·샘플 원클릭) ---------- */
+  function initGuide() {
+    /* 프롬프트: 「이 프롬프트로 생성 →」 / 「복사」 */
+    Array.prototype.forEach.call(document.querySelectorAll(".prompt"), function (box) {
+      var text = "";
+      var span = box.querySelector(".ptext");
+      if (span) text = span.textContent.trim();
+      var use = box.querySelector(".use-btn");
+      if (use) {
+        use.addEventListener("click", function () {
+          $("instant-input").value = text;
+          var link = $("nav-instant");
+          if (link) link.click();
+          $("instant-input").focus();
+          toast("프롬프트를 넣었습니다. 「✨ 바로 생성」을 누르세요. (사내망 필요)");
+        });
+      }
+      var cp = box.querySelector(".copy-btn");
+      if (cp) {
+        cp.addEventListener("click", function () {
+          copyToClipboard(text);
+          cp.textContent = "복사됨 ✓";
+          setTimeout(function () { cp.textContent = "복사"; }, 1500);
+        });
+      }
+    });
+    /* 샘플 계약서 → 검토 탭 */
+    var sampleBtn = $("btn-guide-sample");
+    if (sampleBtn) {
+      sampleBtn.addEventListener("click", function () {
+        var el = $("sample-contract-text");
+        var text = el ? el.textContent.replace(/^\s*\n/, "").replace(/\s*$/, "") : "";
+        $("review-input").value = text;
+        var link = $("nav-review");
+        if (link) link.click();
+        $("review-input").focus();
+        toast("샘플 계약서를 넣었습니다. 「🔍 AI 검토 시작」을 누르세요. (사내망 필요)");
+      });
+    }
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+      return;
+    }
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* 무시 */ }
+    document.body.removeChild(ta);
   }
 
   /* ---------- 작업 폴더 연결 (OneAI 작업 폴더 지정) ---------- */
@@ -331,7 +386,7 @@
 
   /* ---------- 탭 전환 ---------- */
   function initTabs() {
-    var tabs = [["browse", "nav-browse"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"]];
+    var tabs = [["browse", "nav-browse"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
     tabs.forEach(function (t) {
       var link = $(t[1]);
       if (!link) return;
@@ -389,9 +444,9 @@
     btn.addEventListener("click", function () {
       select(r.id);
       document.querySelector("#browse").hidden = false;
-      ["review", "instant", "mybox"].forEach(function (id) { $(id).hidden = true; });
+      ["review", "instant", "mybox", "guide"].forEach(function (id) { $(id).hidden = true; });
       $("nav-browse").classList.add("active");
-      ["nav-review", "nav-instant", "nav-mybox"].forEach(function (id) { $(id).classList.remove("active"); });
+      ["nav-review", "nav-instant", "nav-mybox", "nav-guide"].forEach(function (id) { $(id).classList.remove("active"); });
       window.scrollTo(0, 0);
     });
     div.appendChild(btn);

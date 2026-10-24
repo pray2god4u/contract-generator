@@ -80,3 +80,17 @@ nav a.active{color:var(--blue);border-bottom:3px solid var(--blue)}
 .box-row .sub{color:#647693;font-size:12px;margin-top:2px}
 .box-row .del{color:#c0392b;cursor:pointer;font-size:12px;white-space:nowrap;margin-left:12px}
 textarea{border:1px solid #c9d3e1;border-radius:4px;min-height:120px;width:100%;padding:10px;font:inherit}
+/* 사용법 가이드 */
+#guide .panel{max-width:980px}
+.g-h{font-size:15px;margin:26px 0 10px;padding-left:10px;border-left:4px solid var(--blue)}
+.g-steps{margin:8px 0;padding-left:20px;line-height:1.9;color:#3d4a5d}
+.g-table{border-collapse:collapse;width:100%;background:#fff;font-size:13px;margin:10px 0}
+.g-table th,.g-table td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.6}
+.g-table th{background:#eef3fb;color:#263341}
+.prompt{background:#0f1b2d;color:#dbe7f7;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.7;margin:8px 0}
+.prompt .ptext{display:block;white-space:pre-wrap;word-break:break-all}
+.prompt .pact{display:flex;gap:6px;margin-top:8px}
+.prompt .use-btn{border:1px solid var(--purple);background:var(--purple);color:#fff;font-weight:600;min-height:30px;padding:4px 10px;font-size:12px}
+.prompt .use-btn:hover{background:#5d4799;color:#fff;border-color:#5d4799}
+.prompt .copy-btn{border:1px solid #3d5a80;background:#16283f;color:#9fc3ef;min-height:30px;padding:4px 10px;font-size:12px}
+.prompt .copy-btn:hover{border-color:#9fc3ef;color:#fff}
