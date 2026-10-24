@@ -22,7 +22,7 @@
 <main>
   <p class="eyebrow">AI HUB 법률 문서 서식 데이터 기반</p>
   <h1>계약서 초안 생성기</h1>
-  <p class="lead">AI Hub 「계약 법률 문서 서식」·「계약 외 법률 문서 서식」 데이터의 구조를 학습해 만든 서식 안내 도구입니다. 로그인 없이 자유롭게 사용하세요.</p>
+  <p class="lead">AI Hub 「계약 법률 문서 서식」·「계약 외 법률 문서 서식」 데이터의 구조를 학습해 만든 도구입니다. 서식을 고르고 정보를 입력하면 <b>워드(DOCX)·한글(HWPX) 문서 파일</b>로 저장됩니다. 「저장 폴더 연결」로 OneAI 작업 폴더를 한 번 지정하면 이후 저장 시 그 폴더에 바로 만들어집니다.</p>
 
   <div class="metrics" id="metrics"></div>
 
@@ -52,9 +52,17 @@
         <div class="field-grid" id="field-grid"></div>
         <div class="toolbar">
           <button class="primary" id="btn-generate">초안 생성</button>
+          <select id="fmt" style="width:auto;min-width:150px">
+            <option value="docx">DOCX (워드)</option>
+            <option value="hwpx">HWPX (한글)</option>
+            <option value="txt">TXT (텍스트)</option>
+          </select>
+          <button class="primary" id="btn-save">문서 파일 저장</button>
+          <button id="btn-connect-folder">저장 폴더 연결</button>
           <button id="btn-copy">복사</button>
           <button id="btn-print">인쇄</button>
         </div>
+        <p class="count" id="save-folder-status"></p>
       </div>
       <div class="doc" id="doc">
         <h3>서식을 선택하세요</h3>
@@ -70,6 +78,9 @@
 </footer>
 <div class="toast" id="toast"></div>
 
+<script src="vendor/docx.umd.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/hwpx_assets.js"></script>
 <script src="data/index.js"></script>
 <script src="data/templates.js"></script>
 <script src="app.js"></script>

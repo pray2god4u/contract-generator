@@ -1,24 +1,38 @@
-/* 계약서 초안 생성기 앱 로직 */
+/* 계약서 초안 생성기 — 문서 파일 생성 엔진 포함 (DOCX·HWPX·TXT) */
 (function () {
   "use strict";
-  var IDX = window.CAT_INDEX;
-  var TPL = window.CAT_TEMPLATES.templates || [];
+  var G = typeof globalThis !== "undefined" ? globalThis : window;
+  var IDX = G.CAT_INDEX;
+  var TPL = (G.CAT_TEMPLATES || {}).templates || [];
+  var docxLib = typeof window !== "undefined" ? window.docx : require("./vendor/docx.umd.js");
+  var JSZipLib = typeof window !== "undefined" ? window.JSZip : require("./vendor/jszip.min.js");
+  var ASSETS = G.HWPX_ASSETS;
+
   var tplById = {};
   TPL.forEach(function (t) { tplById[t.id] = t; });
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { selected: null, draft: null };
+  var state = { selected: null, skeleton: null, vals: null, model: null, filled: false };
+
+  /* ---------- HWPX 정적 XML ---------- */
+  var CONTAINER_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n' +
+    '<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf">' +
+    '<ocf:rootfiles><ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/></ocf:rootfiles></ocf:container>';
+  var HPF_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n' +
+    '<opf:package xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head">' +
+    '<opf:metadata><opf:meta name="generator" content="contract-generator"/><opf:meta name="kordoc-layout" content="default"/></opf:metadata>' +
+    '<opf:manifest><opf:item id="header" href="Contents/header.xml" media-type="application/xml"/>' +
+    '<opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/></opf:manifest>' +
+    '<opf:spine><opf:itemref idref="header" linear="no"/><opf:itemref idref="section0" linear="yes"/></opf:spine></opf:package>';
 
   /* ---------- 초기화 ---------- */
   function init() {
     var s = IDX.stats || {};
-    var tplCount = TPL.length;
-    var mcCount = Object.keys(IDX.categories).length;
     var metrics = [
       { b: fmt(s.total || IDX.records.length), span: "색인된 서식 문서" },
-      { b: mcCount, span: "대분류" },
-      { b: tplCount, span: "구조 템플릿" },
-      { b: "2", span: "AI Hub 데이터셋" }
+      { b: Object.keys(IDX.categories).length, span: "대분류" },
+      { b: TPL.length, span: "구조 템플릿" },
+      { b: "3", span: "저장 형식 (DOCX·HWPX·TXT)" }
     ];
     $("metrics").innerHTML = metrics.map(function (m) {
       return '<div class="metric"><b>' + m.b + "</b><span>" + m.span + "</span></div>";
@@ -36,9 +50,87 @@
       $(id).addEventListener("change", render);
     });
     $("btn-generate").addEventListener("click", generate);
+    $("btn-save").addEventListener("click", saveDoc);
+    $("btn-connect-folder").addEventListener("click", connectFolder);
     $("btn-copy").addEventListener("click", copyDraft);
     $("btn-print").addEventListener("click", function () { window.print(); });
+    restoreFolder();
     render();
+  }
+
+  /* ---------- 작업 폴더 연결 (OneAI 작업 폴더 지정) ---------- */
+  var dirHandle = null;
+  function idbOpen() {
+    return new Promise(function (res, rej) {
+      var r = indexedDB.open("contract-generator", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("handles"); };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+    });
+  }
+  function idbSet(key, val) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction("handles", "readwrite");
+        tx.objectStore("handles").put(val, key);
+        tx.oncomplete = function () { res(); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    });
+  }
+  function idbGet(key) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction("handles", "readonly");
+        var rq = tx.objectStore("handles").get(key);
+        rq.onsuccess = function () { res(rq.result); };
+        rq.onerror = function () { rej(rq.error); };
+      });
+    });
+  }
+  function updateFolderStatus() {
+    var el = $("save-folder-status");
+    if (dirHandle) el.textContent = "📁 저장 폴더 연결됨: " + dirHandle.name + " — 생성한 문서가 이 폴더에 바로 저장됩니다.";
+    else el.textContent = "저장 폴더 미연결 — 「저장 폴더 연결」로 OneAI 작업 폴더를 지정하면 문서가 그곳에 저장됩니다.";
+  }
+  function connectFolder() {
+    if (!window.showDirectoryPicker) {
+      toast("이 브라우저는 폴더 연결을 지원하지 않습니다. 저장 시 다운로드로 대체됩니다.");
+      return;
+    }
+    window.showDirectoryPicker({ mode: "readwrite" }).then(function (h) {
+      dirHandle = h;
+      return idbSet("workdir", h).then(function () {
+        updateFolderStatus();
+        toast("작업 폴더가 연결되었습니다: " + h.name);
+      });
+    }).catch(function (e) {
+      if (e && e.name !== "AbortError") toast("폴더 연결 실패: " + e.message);
+    });
+  }
+  function restoreFolder() {
+    if (!window.showDirectoryPicker || !indexedDB) { updateFolderStatus(); return; }
+    idbGet("workdir").then(function (h) {
+      if (h) { dirHandle = h; }
+      updateFolderStatus();
+    }).catch(function () { updateFolderStatus(); });
+  }
+  function ensureDirPermission() {
+    if (!dirHandle) return Promise.resolve(false);
+    return dirHandle.queryPermission({ mode: "readwrite" }).then(function (p) {
+      if (p === "granted") return true;
+      return dirHandle.requestPermission({ mode: "readwrite" }).then(function (p2) { return p2 === "granted"; });
+    });
+  }
+  function saveToDir(blob, filename) {
+    return ensureDirPermission().then(function (ok) {
+      if (!ok) return false;
+      return dirHandle.getFileHandle(filename, { create: true }).then(function (fh) {
+        return fh.createWritable().then(function (w) {
+          return w.write(blob).then(function () { return w.close(); });
+        });
+      }).then(function () { return true; });
+    }).catch(function () { return false; });
   }
 
   function sumSc(mc) {
@@ -94,6 +186,11 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function xmlEsc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c];
+    });
+  }
 
   /* ---------- 선택·입력 폼 ---------- */
   function select(id) {
@@ -124,16 +221,10 @@
   }
 
   function showSkeleton() {
-    var r = state.selected;
-    var tpl = tplById[r.id];
-    var secs;
-    if (tpl) {
-      secs = tpl.sections;
-    } else {
-      secs = genericSections(r);
-    }
-    state.skeleton = secs;
-    renderDoc(secs, false);
+    state.skeleton = tplById[state.selected.id] ? tplById[state.selected.id].sections : genericSections(state.selected);
+    state.filled = false;
+    state.model = buildDocModel(state.selected, state.skeleton, null, false);
+    renderModel();
   }
 
   function genericSections(r) {
@@ -162,105 +253,297 @@
     ];
   }
 
-  /* ---------- 초안 생성 ---------- */
+  /* ---------- 문서 모델 (모든 형식의 공급원) ---------- */
   function fieldVal(id) { var el = $(id); return el ? el.value.trim() : ""; }
 
-  function generate() {
-    if (!state.selected) return;
-    var r = state.selected;
-    var vals = {
+  function collectVals() {
+    return {
       a: fieldVal("f-party-a") || "갑(상호)",
       ra: fieldVal("f-rep-a") || "(대표자)",
       b: fieldVal("f-party-b") || "을(상호)",
       rb: fieldVal("f-rep-b") || "(대표자)",
-      amount: fieldVal("f-amount") || "금 ____원",
+      amount: fieldVal("f-amount") || "금 ________원",
       period: fieldVal("f-period") || "____년 __월 __일부터 ____년 __월 __일까지",
       date: fieldVal("f-date") || "____년 __월 __일",
       place: fieldVal("f-place") || "________________",
       extra: fieldVal("f-extra")
     };
-    state.vals = vals;
-    renderDoc(state.skeleton, true, vals);
-    toast("초안이 생성되었습니다. 복사·인쇄할 수 있어요.");
   }
 
-  function renderDoc(secs, filled, vals) {
-    var r = state.selected;
+  function koDate(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    return m ? m[1] + "년 " + parseInt(m[2], 10) + "월 " + parseInt(m[3], 10) + "일" : d;
+  }
+
+  function fillText(hint, v) {
+    if (/금액|대금/.test(hint)) return "계약금액은 " + v.amount + "으로 하며, 지급 방법과 시기는 별도 합의에 따른다.";
+    if (/기간|기한/.test(hint)) return "계약기간은 " + v.period + (v.period.indexOf("까지") > -1 ? "로 한다." : "으로 한다.");
+    if (/목적/.test(hint)) return "본 계약은 갑·을 상호 간의 권리와 의무를 명확히 하기 위하여 체결한다.";
+    if (/해제|해지/.test(hint)) return "일방이 채무를 이행하지 아니하는 경우 상대방은 상당한 기간을 정하여 최고한 후 계약을 해제(해지)할 수 있다.";
+    if (/손해배상|분쟁/.test(hint)) return "계약 관련 분쟁이 발생할 경우 당사자 간 협의로 해결하며, 협의가 이루어지지 않으면 관할 법원에 제소할 수 있다.";
+    if (/대상|범위|표시/.test(hint)) return "계약 대상의 품목·규격·수량 등은 별도 명세서에 따른다.";
+    if (/이행|납품|완료/.test(hint)) return "을은 계약기간 내에 계약 내용을 완료하여 갑에게 납품(통보)하여야 한다.";
+    if (/기타|특약/.test(hint)) return "본 계약에 정하지 아니한 사항은 민법 등 관련 법령과 관례에 따른다.";
+    return hint + " ______________________";
+  }
+
+  function buildDocModel(rec, secs, vals, filled) {
     var v = vals || {};
-    var title = r.t + (filled ? " (초안)" : " — 구조 미리보기");
-    var html = "<h3>" + esc(title) + "</h3>";
-    html += "<p class='doc-sub'>" + esc(r.mc) + " › " + esc(r.sc) + " › " + esc(r.dc) +
-      " · 관련법령: " + esc(r.law || "미명시") + " · 출처: AI 허브(" + esc(r.ds) + ")</p>";
-
-    if (filled) {
-      html += "<p class='sec'>계약서 번호: 제 ______ 호</p>";
-      html += "<p class='sec'>" + esc(v.a) + "(대표자 " + esc(v.ra) + ", 이하 \"갑\")과 " +
-        esc(v.b) + "(대표자 " + esc(v.rb) + ", 이하 \"을\")은 " + esc(v.date) + " " +
-        esc(v.place) + "에서 아래와 같이 계약을 체결한다.</p>";
-    }
-
-    var artNo = 0, lastArt = null, itemNo = 0;
-    var extraItems = (v.extra ? v.extra.split(/[,\n]/) : []).map(function (s) { return s.trim(); }).filter(Boolean);
-
+    var m = {
+      title: rec.t,
+      metaLine: "분류: " + rec.mc + " › " + rec.sc + " › " + rec.dc +
+        " · 관련법령: " + (rec.law || "미명시") + " · 출처: AI 허브(" + rec.ds + ", aihub.or.kr)",
+      paras: [],
+      isContract: rec.ds !== "71835"
+    };
+var artNo = 0, lastArtKey = null, itemNo = 0;
     secs.forEach(function (s) {
       if (s.ft === "제목") return;
-      if (s.art !== lastArt) {
-        if (s.art != null) {
-          artNo = s.art;
-          var artTitle = artTitleOf(s);
-          html += "<div class='art-title'>제" + artNo + "조 (" + esc(artTitle) + ")</div>";
-        }
-        lastArt = s.art; itemNo = 0;
+      var artN = parseInt(s.art, 10);
+      var hasArt = !isNaN(artN) && artN > 0;
+      if (filled && !hasArt) return; /* 전문·서명 등 비조문 힌트는 서두/말미 블록이 대체 */
+      if (hasArt && s.art !== lastArtKey) {
+        artNo++;
+        m.paras.push({ kind: "article", text: "제" + artNo + "조 (" + artTitleOf(s) + ")" });
+        lastArtKey = s.art; itemNo = 0;
       }
+      if (!hasArt) lastArtKey = null;
       itemNo++;
-      var no = s.art != null ? "<span class='no'>" + circled(itemNo) + "</span>" : "";
-      var body = filled ? fillText(s.hint, v, s) : esc(s.hint);
-      html += "<p class='sec'>" + no + body + "</p>";
+      var text = filled ? fillText(s.hint, v) : s.hint;
+      var prefix = hasArt ? circled(itemNo) + " " : "";
+      m.paras.push({ kind: "body", text: prefix + text, indent: hasArt });
     });
-
-    if (filled && extraItems.length) {
-      artNo++;
-      html += "<div class='art-title'>제" + artNo + "조 (특약사항)</div>";
-      extraItems.forEach(function (t, i) {
-        html += "<p class='sec'><span class='no'>" + circled(i + 1) + "</span>" + esc(t) + "</p>";
-      });
-    }
-
     if (filled) {
-      html += "<p class='sec' style='margin-top:24px'>이 계약의 성립을 증명하기 위하여 계약서 2부를 작성하고 갑·을이 각각 서명 날인 후 1부씩 보관한다.</p>";
-      html += "<p class='sec' style='margin-top:16px'>" + esc(v.date) + "</p>";
-      html += "<div style='display:flex;gap:48px;margin-top:12px'>" +
-        "<div><b>갑</b> " + esc(v.a) + "<br>대표자 " + esc(v.ra) + " (서명·인)</div>" +
-        "<div><b>을</b> " + esc(v.b) + "<br>대표자 " + esc(v.rb) + " (서명·인)</div></div>";
-      html += "<p class='hint' style='margin-top:24px'>※ 본 초안은 AI Hub 법률 문서 서식 데이터의 구조를 참고한 예시이며, 법적 효력 검토를 변호사 등 전문가와 하시기 바랍니다.</p>";
+      var extraItems = (v.extra || "").split(/[,\n]/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (extraItems.length) {
+        artNo++;
+        m.paras.push({ kind: "article", text: "제" + artNo + "조 (특약사항)" });
+        extraItems.forEach(function (t, i) {
+          m.paras.push({ kind: "body", text: circled(i + 1) + " " + t, indent: true });
+        });
+      }
+      if (m.isContract) {
+        m.paras.unshift({ kind: "body", text: "계약서 번호: 제 ______ 호" });
+        m.paras.splice(1, 0, {
+          kind: "body",
+          text: v.a + "(대표자 " + v.ra + ", 이하 \"갑\")과 " + v.b + "(대표자 " + v.rb +
+            ", 이하 \"을\")은 " + koDate(v.date) + " " + v.place + "에서 아래와 같이 계약을 체결한다."
+        });
+        m.paras.push({ kind: "body", text: "이 계약의 성립을 증명하기 위하여 계약서 2부를 작성하고 갑·을이 각각 서명 날인 후 1부씩 보관한다." });
+        m.paras.push({ kind: "body", text: koDate(v.date), right: true });
+        m.paras.push({ kind: "body", text: "갑(발주자): " + v.a + " · 대표자 " + v.ra + " (서명·인)" });
+        m.paras.push({ kind: "body", text: "을(수급자): " + v.b + " · 대표자 " + v.rb + " (서명·인)" });
+      } else {
+        m.paras.push({ kind: "body", text: koDate(v.date) });
+        m.paras.push({ kind: "body", text: "발신인: " + v.a + " " + v.ra + " (서명·인)" });
+      }
+      m.paras.push({ kind: "meta", text: "※ 본 초안은 AI Hub 법률 문서 서식 데이터의 구조를 참고한 예시이며, 법적 효력 검토를 변호사 등 전문가와 하시기 바랍니다." });
     } else {
-      html += "<p class='hint' style='margin-top:24px'>※ 위 구획은 원문 데이터의 조문 구조를 요약한 안내입니다. 좌측 상단 「초안 생성」에서 기본 정보를 입력하면 계약서 초안으로 변환됩니다.</p>";
+      m.paras.push({ kind: "meta", text: "※ 위 구획은 원문 데이터의 조문 구조를 요약한 안내입니다. 기본 정보를 입력하고 「초안 생성」을 누르면 계약서 초안으로 변환되며, DOCX·HWPX 문서 파일로 저장할 수 있습니다." });
     }
-    $("doc").innerHTML = html;
+    return m;
   }
 
   function artTitleOf(s) {
     var lb = (s.lb || []).filter(function (x) { return x && x !== "기타"; });
     if (lb.length) return lb[0];
-    if (s.hint && s.hint.indexOf("기재 항목:") === 0) return s.hint.replace("기재 항목: ", "").split(",")[0];
-    return "계약조건";
+    var h = (s.hint || "").replace(/^기재 항목:\s*/, "").split(",")[0].trim();
+    if (h && h.length <= 22 && !/기술|작성|해당|기재/.test(h)) return h;
+return "계약조건";
   }
 
   function circled(n) {
-    var c = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮";
+    var c = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
     return c[n - 1] || n + ".";
   }
 
-  function fillText(hint, v, s) {
-    var t = esc(hint);
-    if (/계약금액|대금/.test(hint)) t += " " + esc(v.amount);
-    if (/기한|기간/.test(hint)) t += " " + esc(v.period);
-    return t + " ______________________";
+  /* ---------- 화면 렌더 ---------- */
+  function generate() {
+    if (!state.selected) return;
+    state.vals = collectVals();
+    state.filled = true;
+    state.model = buildDocModel(state.selected, state.skeleton, state.vals, true);
+    renderModel();
+    toast("초안이 생성되었습니다. 문서 파일로 저장할 수 있어요.");
+  }
+
+  function renderModel() {
+    var m = state.model;
+    var html = "<h3>" + esc(m.title) + (state.filled ? " (초안)" : " — 구조 미리보기") + "</h3>";
+    html += "<p class='doc-sub'>" + esc(m.metaLine) + "</p>";
+    m.paras.forEach(function (p) {
+      if (p.kind === "article") html += "<div class='art-title'>" + esc(p.text) + "</div>";
+      else if (p.kind === "meta") html += "<p class='hint'>" + esc(p.text) + "</p>";
+      else html += "<p class='sec'" + (p.right ? " style='text-align:right'" : "") + ">" + esc(p.text) + "</p>";
+    });
+    $("doc").innerHTML = html;
+  }
+
+  /* ---------- DOCX 생성 ---------- */
+  function buildDocxChildren(model) {
+    var D = docxLib;
+    function run(text, opts) {
+      var o = { text: text, font: "맑은 고딕", size: 20 };
+      if (opts) for (var k in opts) o[k] = opts[k];
+      return new D.TextRun(o);
+    }
+    function para(children, opts) {
+      var o = { children: children };
+      if (opts) for (var k in opts) o[k] = opts[k];
+      return new D.Paragraph(o);
+    }
+    var out = [];
+    out.push(para([run(model.title, { bold: true, size: 32 })],
+      { alignment: D.AlignmentType.CENTER, spacing: { after: 160 } }));
+    out.push(para([run(model.metaLine, { size: 16, color: "647693" })],
+      { alignment: D.AlignmentType.CENTER, spacing: { after: 360 } }));
+    model.paras.forEach(function (p) {
+      if (p.kind === "article") {
+        out.push(para([run(p.text, { bold: true, size: 28 })], { spacing: { before: 240, after: 100 } }));
+      } else if (p.kind === "meta") {
+        out.push(para([run(p.text, { size: 16, color: "8a97ab" })], { spacing: { before: 200 } }));
+      } else {
+        var opts = { spacing: { after: 80 } };
+        if (p.indent) opts.indent = { left: 420 };
+        if (p.right) opts.alignment = D.AlignmentType.RIGHT;
+        out.push(para([run(p.text)], opts));
+      }
+    });
+    return out;
+  }
+
+  /* ---------- HWPX 생성 ---------- */
+  function hwpxPara(p, isFirst) {
+    var run = '<hp:run charPrIDRef="' + (p.kind === "article" ? "6" : "0") + '">';
+    if (isFirst) run += ASSETS.secPr + ASSETS.ctrl;
+    return '<hp:p paraPrIDRef="' + (p.kind === "article" ? "2" : "0") + '" styleIDRef="0">' +
+      run + "<hp:t>" + xmlEsc(p.text) + "</hp:t></hp:run></hp:p>";
+  }
+
+  function buildSectionXml(model) {
+    var lines = ['<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>',
+      '<hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph">'];
+    var titlePara = { kind: "title", text: model.title };
+    lines.push('<hp:p paraPrIDRef="1" styleIDRef="0"><hp:run charPrIDRef="5">' +
+      ASSETS.secPr + ASSETS.ctrl + "<hp:t>" + xmlEsc(titlePara.text) + "</hp:t></hp:run></hp:p>");
+    lines.push('<hp:p paraPrIDRef="0" styleIDRef="0"><hp:run charPrIDRef="0"><hp:t>' +
+      xmlEsc(model.metaLine) + "</hp:t></hp:run></hp:p>");
+    model.paras.forEach(function (p) { lines.push(hwpxPara(p, false)); });
+    lines.push("</hs:sec>");
+    return lines.join("\n");
+  }
+
+  function prvText(model) {
+    var lines = [model.title, model.metaLine];
+    model.paras.forEach(function (p) { lines.push(p.text); });
+    return lines.join("\r\n");
+  }
+
+  function makeHwpxFiles(model) {
+    return [
+      ["mimetype", "application/hwp+zip"],
+      ["META-INF/container.xml", CONTAINER_XML],
+      ["Contents/content.hpf", HPF_XML],
+      ["Contents/header.xml", ASSETS.header],
+      ["Contents/section0.xml", buildSectionXml(model)],
+      ["Preview/PrvText.txt", prvText(model)]
+    ];
+  }
+
+  function makeHwpxBlob(model) {
+    var zip = new JSZipLib();
+    makeHwpxFiles(model).forEach(function (f) {
+      zip.file(f[0], f[1], f[0] === "mimetype" ? { compression: "STORE" } : {});
+    });
+    return zip.generateAsync({ type: "blob", mimeType: "application/hwp+zip", compression: "DEFLATE" });
+  }
+
+  /* ---------- TXT 생성 ---------- */
+  function buildTxt(model) {
+    var lines = [model.title, "", model.metaLine, ""];
+    model.paras.forEach(function (p) { lines.push(p.text); });
+    return lines.join("\n");
+  }
+
+  /* ---------- 파일명·저장 ---------- */
+  function sanitizeName(s) {
+    return String(s).replace(/[\\/:*?"<>|\s]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "문서";
+  }
+  function docBaseName(model) {
+    var prefix = model.isContract ? "계약서초안" : "문서초안";
+    var d = new Date();
+    var ymd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+    return prefix + "_" + sanitizeName(model.title) + "_" + ymd;
+  }
+
+  function saveDoc() {
+    if (!state.selected) { toast("먼저 왼쪽에서 서식을 선택하세요."); return; }
+    if (!state.filled) generate();
+    var fmtSel = $("fmt").value;
+    var model = state.model;
+    var base = docBaseName(model);
+    var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (fmtSel === "docx") {
+      var D = docxLib;
+      var doc = new D.Document({ sections: [{ properties: {}, children: buildDocxChildren(model) }] });
+      D.Packer.toBlob(doc).then(function (blob) {
+        deliver(blob, base + ".docx", DOCX_MIME,
+          [{ description: "워드 문서", accept: { "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] } }]);
+      }).catch(function (e) { toast("DOCX 생성 실패: " + e.message); });
+    } else if (fmtSel === "hwpx") {
+      makeHwpxBlob(model).then(function (blob) {
+        deliver(blob, base + ".hwpx", "application/hwp+zip",
+          [{ description: "한글 문서", accept: { "application/hwp+zip": [".hwpx"] } }]);
+      }).catch(function (e) { toast("HWPX 생성 실패: " + e.message); });
+    } else {
+      var blob = new Blob([buildTxt(model)], { type: "text/plain;charset=utf-8" });
+      deliver(blob, base + ".txt", "text/plain",
+        [{ description: "텍스트", accept: { "text/plain": [".txt"] } }]);
+    }
+  }
+
+  function deliver(blob, filename, mime, types) {
+    if (dirHandle) {
+      saveToDir(blob, filename).then(function (ok) {
+        if (ok) toast("작업 폴더에 저장 완료: " + filename);
+        else saveWithPicker(blob, filename, mime, types);
+      });
+    } else {
+      saveWithPicker(blob, filename, mime, types);
+    }
+  }
+
+  function saveWithPicker(blob, filename, mime, types) {
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker({ suggestedName: filename, types: types })
+        .then(function (handle) {
+          return handle.createWritable().then(function (w) {
+            return w.write(blob).then(function () { return w.close(); });
+          });
+        })
+        .then(function () { toast("저장 완료: " + filename); })
+        .catch(function (e) {
+          if (e && e.name === "AbortError") return;
+          downloadFallback(blob, filename);
+        });
+    } else {
+      downloadFallback(blob, filename);
+    }
+  }
+
+  function downloadFallback(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    toast("다운로드 완료: " + filename);
   }
 
   /* ---------- 복사·인쇄·토스트 ---------- */
   function docPlainText() {
-    return $("doc").innerText.replace(/\n{3,}/g, "\n\n");
+    return buildTxt(state.model || buildDocModel(state.selected, state.skeleton, null, false));
   }
   function copyDraft() {
     var text = docPlainText();
@@ -281,8 +564,18 @@
     var el = $("toast");
     el.textContent = msg; el.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2200);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
   }
 
-  init();
+  if (typeof document !== "undefined") init();
+
+  /* node 테스트용 export */
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      buildDocModel: buildDocModel, buildDocxChildren: buildDocxChildren,
+      buildSectionXml: buildSectionXml, makeHwpxFiles: makeHwpxFiles,
+      buildTxt: buildTxt, genericSections: genericSections,
+      docBaseName: docBaseName, koDate: koDate
+    };
+  }
 })();
