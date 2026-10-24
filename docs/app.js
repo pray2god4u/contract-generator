@@ -387,7 +387,7 @@
     var btn = document.createElement("button");
     btn.textContent = "선택";
     btn.addEventListener("click", function () {
-      selectRecord(r);
+      select(r.id);
       document.querySelector("#browse").hidden = false;
       ["review", "instant", "mybox"].forEach(function (id) { $(id).hidden = true; });
       $("nav-browse").classList.add("active");
@@ -430,7 +430,7 @@
       chip.textContent = c;
       chip.title = "클릭하면 특약사항 입력란에 추가됩니다";
       chip.addEventListener("click", function () {
-        var ta = $("f-특약사항") || $("f-특약") || $("f-기타");
+        var ta = $("f-extra");
         if (ta) {
           ta.value = ta.value ? ta.value.replace(/\s*$/, "") + (ta.value ? "\n" : "") + c : c;
           toast("특약사항에 추가했습니다.");
@@ -483,7 +483,7 @@
     out.innerHTML = "<p class='count'>AI가 계약서를 분석 중입니다…</p>";
     var cfg = aiCfg();
     var p = buildReviewPrompt(text.slice(0, 12000));
-    callLLM(cfg, p.system, p.user, function (delta, acc) {
+    callLLM(cfg, p.system, p.user, function (acc) {
       out.innerHTML = "<div class='ai-stream'>" + esc(acc) + "</div>";
       out.scrollTop = out.scrollHeight;
     }).then(function (full) {
@@ -523,7 +523,7 @@
     out.innerHTML = "<p class='count'>AI가 요청을 분석하고 초안을 작성합니다…</p>";
     var cfg = aiCfg();
     var p = buildInstantPrompt(req);
-    callLLM(cfg, p.system, p.user, function (delta, acc) {
+    callLLM(cfg, p.system, p.user, function (acc) {
       out.innerHTML = "<div class='ai-stream'>" + esc(acc.slice(0, 600)) + (acc.length > 600 ? " …" : "") + "</div>";
     }).then(function (full) {
       var plan;
@@ -647,6 +647,7 @@
     for (var i = 0; i < IDX.records.length; i++) {
       if (IDX.records[i].id === id) { state.selected = IDX.records[i]; break; }
     }
+    if (!state.selected) { toast("목록에서 찾을 수 없는 문서입니다."); return; }
     Array.prototype.forEach.call($("results").children, function (el) {
       el.classList.toggle("active", el.getAttribute("data-id") === id);
     });

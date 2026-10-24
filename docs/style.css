@@ -69,8 +69,6 @@ nav a.active{color:var(--blue);border-bottom:3px solid var(--blue)}
 .fav{cursor:pointer;margin-right:6px;color:#c9d3e1;font-size:15px}
 .fav.on{color:#f5a623}
 .fav:hover{color:#f5a623}
-.panel{display:none}
-.panel.active{display:block}
 .review-item{border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:10px 0;background:#fff}
 .review-item .rv-head{font-weight:700;margin-bottom:6px}
 .rv-high .rv-head{color:#c0392b}.rv-mid .rv-head{color:#b7791f}.rv-low .rv-head{color:#2f855a}

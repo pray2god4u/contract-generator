@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v4.0</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v4.1</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
     <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
@@ -34,14 +34,14 @@
       <p class="count">계약서 전문을 붙여넣으면 AI(dsm-120b)가 조항별 리스크와 누락된 필수 조항을 분석합니다. 사내망에서만 동작합니다.</p>
       <textarea id="review-input" rows="14" placeholder="여기에 계약서 전문을 붙여넣으세요…&#10;&#10;예) 제1조 (목적) 본 계약은 …"></textarea>
       <div class="toolbar">
-        <button class="primary ai" id="btn-review">🔍 AI 검토 시작</button>
+        <button class="primary ai" id="btn-review-run">🔍 AI 검토 시작</button>
         <button id="btn-review-clear">지우기</button>
       </div>
       <p class="count" id="review-status"></p>
     </div>
     <div class="panel" id="review-result">
       <h2>검토 결과</h2>
-      <p class="count">검토 결과가 여기에 표시됩니다.</p>
+      <div id="review-output"><p class="count">검토 결과가 여기에 표시됩니다.</p></div>
     </div>
   </section>
 
@@ -51,13 +51,14 @@
       <p class="count">자연어로 요청하면 AI가 서식을 찾고 초안까지 즉시 만듭니다. 사내망에서만 동작합니다.</p>
       <textarea id="instant-input" rows="5" placeholder="예) 사무실 임대차계약서 만들어줘. 보증금 5천만원, 월세 50만원, 2026-12-01부터 1년, 임대인 홍길동, 임차인 (주)테스트"></textarea>
       <div class="toolbar">
-        <button class="primary ai" id="btn-instant">✨ 바로 생성</button>
+        <button class="primary ai" id="btn-instant-run">✨ 바로 생성</button>
+        <button id="btn-instant-clear">지우기</button>
       </div>
       <p class="count" id="instant-status"></p>
     </div>
     <div class="panel" id="instant-result">
       <h2>생성 결과</h2>
-      <p class="count">요청하면 결과가 여기에 표시됩니다.</p>
+      <div id="instant-output"><p class="count">요청하면 결과가 여기에 표시됩니다.</p></div>
     </div>
   </section>
 
@@ -148,11 +149,11 @@
 </footer>
 <div class="toast" id="toast"></div>
 
-<script src="vendor/docx.umd.js?v=5"></script>
-<script src="vendor/jszip.min.js?v=5"></script>
-<script src="vendor/hwpx_assets.js?v=5"></script>
-<script src="data/index.js?v=5"></script>
-<script src="data/templates.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="vendor/docx.umd.js?v=6"></script>
+<script src="vendor/jszip.min.js?v=6"></script>
+<script src="vendor/hwpx_assets.js?v=6"></script>
+<script src="data/index.js?v=6"></script>
+<script src="data/templates.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
