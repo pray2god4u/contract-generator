@@ -94,3 +94,7 @@ textarea{border:1px solid #c9d3e1;border-radius:4px;min-height:120px;width:100%;
 .prompt .use-btn:hover{background:#5d4799;color:#fff;border-color:#5d4799}
 .prompt .copy-btn{border:1px solid #3d5a80;background:#16283f;color:#9fc3ef;min-height:30px;padding:4px 10px;font-size:12px}
 .prompt .copy-btn:hover{border-color:#9fc3ef;color:#fff}
+.doc-box{background:#fff;border:1px solid var(--line);border-radius:6px;padding:22px 26px;max-height:520px;overflow:auto;line-height:1.8}
+.doc-box h3{margin:0 0 4px}
+.doc-box .art-title{font-weight:700;margin:14px 0 4px}
+.doc-box .sec{margin:4px 0}

@@ -57,6 +57,8 @@
     $("btn-print").addEventListener("click", function () { window.print(); });
     $("btn-review-run").addEventListener("click", reviewContract);
     $("btn-instant-run").addEventListener("click", instantGenerate);
+    $("btn-instant-open").addEventListener("click", openInstantInBrowse);
+    $("btn-instant-save").addEventListener("click", saveDoc);
     restoreFolder();
     restoreAiCfg();
     initTabs();
@@ -618,7 +620,8 @@
       };
       state.selected = { t: plan.title || "계약서", mc: plan.mc || "", sc: plan.sc || "", ds: "AI" };
       renderModel();
-      out.innerHTML = "<p class='count'>✅ 초안 생성 완료 — 우측 문서를 확인하고 「문서 파일 저장」으로 내려받으세요.</p>";
+      renderInstantPreview();
+      out.innerHTML = "<p class='count'>✅ 초안 생성 완료 — 아래 「초안 미리보기」에서 확인하고 「💾 문서 파일 저장」으로 내려받으세요.</p>";
       btn.disabled = false;
       addHistory({ id: "instant-" + Date.now(), t: plan.title || "계약서", mc: plan.mc || "AI", sc: plan.sc || "", ds: "AI" }, "AI");
       toast("AI 초안이 생성되었습니다.");
@@ -626,6 +629,35 @@
       btn.disabled = false;
       out.innerHTML = "<p class='hint'>생성 실패: " + esc(e.message) + "</p>";
     });
+  }
+
+  /* ---------- 바로 생성 미리보기 ---------- */
+  function renderInstantPreview() {
+    var pv = $("instant-preview"), doc = $("instant-doc");
+    if (!pv || !doc) return;
+    var m = state.model;
+    var html = "<h3>" + esc(m.title) + " (초안)</h3>";
+    html += "<p class='doc-sub'>" + esc(m.metaLine) + "</p>";
+    m.paras.forEach(function (p) {
+      if (p.kind === "article") html += "<div class='art-title'>" + esc(p.text) + "</div>";
+      else if (p.kind === "meta") html += "<p class='hint'>" + esc(p.text) + "</p>";
+      else html += "<p class='sec'>" + esc(p.text) + "</p>";
+    });
+    doc.innerHTML = html;
+    pv.hidden = false;
+  }
+  function openInstantInBrowse() {
+    $("nav-browse").listeners && null; /* no-op guard */
+    var tabs = [["browse", "nav-browse"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
+    tabs.forEach(function (t) {
+      var sec = $(t[0]);
+      if (sec) sec.hidden = (t[0] !== "browse");
+      var nav = $(t[1]);
+      if (nav) nav.classList.toggle("active", t[0] === "browse");
+    });
+    $("fields-panel").hidden = false;
+    window.scrollTo(0, 0);
+    toast("서식 탐색 탭의 문서 영역에서 편집·저장할 수 있습니다.");
   }
 
   function sumSc(mc) {
