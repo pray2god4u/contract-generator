@@ -58,7 +58,7 @@
     $("btn-review-run").addEventListener("click", reviewContract);
     $("btn-instant-run").addEventListener("click", instantGenerate);
     $("btn-instant-open").addEventListener("click", openInstantInBrowse);
-    $("btn-instant-save").addEventListener("click", saveDoc);
+    $("btn-instant-save").addEventListener("click", function () { saveDoc($("fmt-instant").value); });
     restoreFolder();
     restoreAiCfg();
     initTabs();
@@ -1039,10 +1039,10 @@ return "계약조건";
     return prefix + "_" + sanitizeName(model.title) + "_" + ymd;
   }
 
-  function saveDoc() {
+  function saveDoc(fmtOverride) {
     if (!state.selected) { toast("먼저 왼쪽에서 서식을 선택하세요."); return; }
     if (!state.filled) generate();
-    var fmtSel = $("fmt").value;
+    var fmtSel = fmtOverride || $("fmt").value;
     var model = state.model;
     var base = docBaseName(model);
     var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
