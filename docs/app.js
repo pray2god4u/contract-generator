@@ -337,6 +337,7 @@
   function render() {
     var mc = $("mc").value;
     var scSel = $("sc");
+    var prevSc = scSel.value; /* 사용자가 고른 중분류 보존 */
     scSel.innerHTML = '<option value="">전체</option>';
     if (mc) {
       Object.keys(IDX.categories[mc] || {}).sort().forEach(function (sc) {
@@ -344,6 +345,9 @@
         o.value = sc; o.textContent = sc + " (" + IDX.categories[mc][sc] + ")";
         scSel.appendChild(o);
       });
+    }
+    if (prevSc && mc && (IDX.categories[mc] || {})[prevSc] != null) {
+      scSel.value = prevSc; /* 대분류가 바뀌지 않았다면 선택 유지 */
     }
     var rows = filtered();
     $("count").textContent = "총 " + fmt(rows.length) + "건" + (rows.length > 100 ? " · 100건만 표시" : "");
