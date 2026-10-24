@@ -10,11 +10,13 @@
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v3.1</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v4.0</span><br><small style="font-weight:400;color:#647693">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
-    <a href="#browse">서식 탐색</a>
-    <a href="#draft">초안 생성</a>
+    <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
+    <a href="#review" id="nav-review">AI 계약서 검토</a>
+    <a href="#instant" id="nav-instant">AI 바로 생성</a>
+    <a href="#mybox" id="nav-mybox">나만의 서식함</a>
     <a href="https://www.aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=data&dataSetSn=71834" target="_blank" rel="noopener">데이터 출처</a>
   </nav>
 </header>
@@ -25,6 +27,63 @@
   <p class="lead">AI Hub 「계약 법률 문서 서식」·「계약 외 법률 문서 서식」 데이터의 구조를 학습해 만든 도구입니다. 서식을 고르고 정보를 입력하면 <b>워드(DOCX)·한글(HWPX) 문서 파일</b>로 저장됩니다. 「저장 폴더 연결」로 OneAI 작업 폴더를 한 번 지정하면 이후 저장 시 그 폴더에 바로 만들어집니다.</p>
 
   <div class="metrics" id="metrics"></div>
+
+  <section id="review" class="layout" hidden>
+    <div class="panel">
+      <h2>계약서 검토</h2>
+      <p class="count">계약서 전문을 붙여넣으면 AI(dsm-120b)가 조항별 리스크와 누락된 필수 조항을 분석합니다. 사내망에서만 동작합니다.</p>
+      <textarea id="review-input" rows="14" placeholder="여기에 계약서 전문을 붙여넣으세요…&#10;&#10;예) 제1조 (목적) 본 계약은 …"></textarea>
+      <div class="toolbar">
+        <button class="primary ai" id="btn-review">🔍 AI 검토 시작</button>
+        <button id="btn-review-clear">지우기</button>
+      </div>
+      <p class="count" id="review-status"></p>
+    </div>
+    <div class="panel" id="review-result">
+      <h2>검토 결과</h2>
+      <p class="count">검토 결과가 여기에 표시됩니다.</p>
+    </div>
+  </section>
+
+  <section id="instant" class="layout" hidden>
+    <div class="panel">
+      <h2>AI 바로 생성</h2>
+      <p class="count">자연어로 요청하면 AI가 서식을 찾고 초안까지 즉시 만듭니다. 사내망에서만 동작합니다.</p>
+      <textarea id="instant-input" rows="5" placeholder="예) 사무실 임대차계약서 만들어줘. 보증금 5천만원, 월세 50만원, 2026-12-01부터 1년, 임대인 홍길동, 임차인 (주)테스트"></textarea>
+      <div class="toolbar">
+        <button class="primary ai" id="btn-instant">✨ 바로 생성</button>
+      </div>
+      <p class="count" id="instant-status"></p>
+    </div>
+    <div class="panel" id="instant-result">
+      <h2>생성 결과</h2>
+      <p class="count">요청하면 결과가 여기에 표시됩니다.</p>
+    </div>
+  </section>
+
+  <section id="mybox" class="layout" hidden>
+    <div class="panel">
+      <h2>나만의 서식함</h2>
+      <p class="count">즐겨찾는 서식·작성 이력·자주 쓰는 특약이 이 브라우저에 저장됩니다.</p>
+      <div class="toolbar">
+        <button id="btn-box-clear">서식함 비우기</button>
+      </div>
+      <h3 style="font-size:14px;margin:14px 0 6px">⭐ 즐겨찾기 서식</h3>
+      <div class="result-list" id="fav-list"></div>
+      <h3 style="font-size:14px;margin:14px 0 6px">🕘 작성 이력</h3>
+      <div class="result-list" id="hist-list"></div>
+      <h3 style="font-size:14px;margin:14px 0 6px">📌 자주 쓰는 특약 조항</h3>
+      <div class="field-grid" id="clause-grid"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="clause-input" placeholder="새 특약 조항 추가 (예: 분쟁 시 서울중앙지방법원 관할)" style="flex:1">
+        <button id="btn-clause-add" class="primary">추가</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>사용 안내</h2>
+      <p class="count">서식 탐색에서 목록의 ⭐를 누르면 즐겨찾기에 추가됩니다.<br>초안 생성 후 「문서 파일 저장」하면 작성 이력에 자동 기록됩니다.<br>특약 조항은 초안 생성 시 「특약사항」 입력란에서 클릭해 바로 넣을 수 있습니다.</p>
+    </div>
+  </section>
 
   <section id="browse" class="layout">
     <div class="panel">
@@ -89,11 +148,11 @@
 </footer>
 <div class="toast" id="toast"></div>
 
-<script src="vendor/docx.umd.js?v=4"></script>
-<script src="vendor/jszip.min.js?v=4"></script>
-<script src="vendor/hwpx_assets.js?v=4"></script>
-<script src="data/index.js?v=4"></script>
-<script src="data/templates.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="vendor/docx.umd.js?v=5"></script>
+<script src="vendor/jszip.min.js?v=5"></script>
+<script src="vendor/hwpx_assets.js?v=5"></script>
+<script src="data/index.js?v=5"></script>
+<script src="data/templates.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
