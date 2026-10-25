@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v4.5</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v4.6</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
     <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
@@ -28,6 +28,61 @@
   <p class="lead">AI Hub 「계약 법률 문서 서식」·「계약 외 법률 문서 서식」 데이터의 구조를 학습해 만든 도구입니다. 서식을 고르고 정보를 입력하면 <b>워드(DOCX)·한글(HWPX) 문서 파일</b>로 저장됩니다. 「저장 폴더 연결」로 OneAI 작업 폴더를 한 번 지정하면 이후 저장 시 그 폴더에 바로 만들어집니다.</p>
 
   <div class="metrics" id="metrics"></div>
+
+  <section id="browse" class="layout">
+    <div class="panel">
+      <h2>문서 유형 선택</h2>
+      <p class="count">18,436건 원본 서식을 유형별로 정리해 <b>86종</b>으로 추렸습니다. 각 유형은 원문 구조가 가장 완비된 대표 서식으로 연결됩니다.</p>
+      <div class="search-row">
+        <input id="q" type="search" placeholder="유형 검색 (예: 매매, 임대차, 비밀유지)">
+      </div>
+      <label for="mc">대분류</label>
+      <select id="mc"><option value="">전체</option></select>
+      <label for="sc">중분류</label>
+      <select id="sc"><option value="">전체</option></select>
+      <label for="ds">문서 구분</label>
+      <select id="ds">
+        <option value="">전체</option>
+        <option value="71834">계약 문서 (71834)</option>
+        <option value="71835">계약 외 문서 (71835)</option>
+      </select>
+      <p class="count" id="count"></p>
+      <div class="result-list" id="results"></div>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="btn-all-variants">변형 전체 보기 (18,436건)</button>
+      </div>
+      <p class="count" id="variant-note" hidden>유형별 변형 원본 전체 목록입니다. 유형 선택으로 돌아가려면 검색 조건을 초기화하세요.</p>
+    </div>
+    <div class="panel" id="fields-panel" hidden>
+      <h2>기본 정보 입력</h2>
+      <div class="field-grid" id="field-grid"></div>
+      <div class="toolbar">
+        <button class="primary" id="btn-generate">초안 생성</button>
+        <button class="primary ai" id="btn-ai" title="사내 GenAI(dsm-120b)로 실제 조문을 작성합니다">✨ AI 초안 생성</button>
+        <select id="fmt" class="fmt-select">
+          <option value="docx">DOCX (워드)</option>
+          <option value="hwpx">HWPX (한글)</option>
+          <option value="txt">TXT (텍스트)</option>
+        </select>
+        <button class="primary" id="btn-save">문서 파일 저장</button>
+        <button id="btn-connect-folder">저장 폴더 연결</button>
+        <button id="btn-copy">복사</button>
+        <button id="btn-print">인쇄</button>
+      </div>
+      <details class="ai-config" id="ai-config">
+        <summary>AI 연결 설정 (사내 GenAI)</summary>
+        <div class="field-grid">
+          <div class="ai-url-field"><label for="ai-url">요청 URL</label><input id="ai-url"></div>
+          <div><label for="ai-model">모델</label><input id="ai-model"></div>
+          <div><label for="ai-temp">temperature (0~1)</label><input id="ai-temp" type="number" min="0" max="1" step="0.05"></div>
+          <div><label for="ai-maxtok">max_tokens</label><input id="ai-maxtok" type="number" min="256" max="16384" step="256"></div>
+        </div>
+        <p class="count">사내망에서만 동작합니다. 설정은 이 브라우저에만 저장됩니다.</p>
+      </details>
+      <p class="count" id="save-folder-status"></p>
+      <div class="doc-box" id="doc"></div>
+    </div>
+  </section>
 
   <section id="review" class="layout" hidden>
     <div class="panel">
@@ -148,56 +203,59 @@
     </div>
   </section>
 
-  <section id="browse" class="layout">
+  <section id="browse-variants" class="layout" hidden>
     <div class="panel">
-      <h2>서식 검색</h2>
+      <h2>서식 검색 (변형 전체)</h2>
       <div class="search-row">
-        <input id="q" type="search" placeholder="제목·법령 검색 (예: 매매, 임대차)">
+        <input id="q2" type="search" placeholder="제목·법령 검색 (예: 매매, 임대차)">
       </div>
-      <label for="mc">대분류</label>
-      <select id="mc"><option value="">전체</option></select>
-      <label for="sc">중분류</label>
-      <select id="sc"><option value="">전체</option></select>
-      <label for="ds">데이터셋</label>
-      <select id="ds">
+      <label for="mc2">대분류</label>
+      <select id="mc2"><option value="">전체</option></select>
+      <label for="sc2">중분류</label>
+      <select id="sc2"><option value="">전체</option></select>
+      <label for="ds2">데이터셋</label>
+      <select id="ds2">
         <option value="">전체</option>
         <option value="71834">71834 · 계약 법률 문서</option>
         <option value="71835">71835 · 계약 외 법률 문서</option>
       </select>
-      <p class="count" id="count"></p>
-      <div class="result-list" id="results"></div>
+      <p class="count" id="count2"></p>
+      <div class="result-list" id="results2"></div>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="btn-back-types">← 유형 86종 목록으로</button>
+      </div>
     </div>
 
     <div>
-      <div class="panel" id="fields-panel" hidden>
+      <div class="panel" id="fields-panel2" hidden>
         <h2>기본 정보 입력</h2>
-        <div class="field-grid" id="field-grid"></div>
+        <div class="field-grid" id="field-grid2"></div>
         <div class="toolbar">
-          <button class="primary" id="btn-generate">초안 생성</button>
-          <button class="primary ai" id="btn-ai" title="사내 GenAI(dsm-120b)로 실제 조문을 작성합니다">✨ AI 초안 생성</button>
-          <select id="fmt" class="fmt-select">
+          <button class="primary" id="btn-generate2">초안 생성</button>
+          <button class="primary ai" id="btn-ai2" title="사내 GenAI(dsm-120b)로 실제 조문을 작성합니다">✨ AI 초안 생성</button>
+          <select id="fmt2" class="fmt-select">
             <option value="docx">DOCX (워드)</option>
             <option value="hwpx">HWPX (한글)</option>
             <option value="txt">TXT (텍스트)</option>
           </select>
-          <button class="primary" id="btn-save">문서 파일 저장</button>
-          <button id="btn-connect-folder">저장 폴더 연결</button>
-          <button id="btn-copy">복사</button>
-          <button id="btn-print">인쇄</button>
+          <button class="primary" id="btn-save2">문서 파일 저장</button>
+          <button id="btn-connect-folder2">저장 폴더 연결</button>
+          <button id="btn-copy2">복사</button>
+          <button id="btn-print2">인쇄</button>
         </div>
-        <details class="ai-config" id="ai-config">
+        <details class="ai-config" id="ai-config2">
           <summary>AI 연결 설정 (사내 GenAI)</summary>
           <div class="field-grid">
-            <div class="ai-url-field"><label for="ai-url">요청 URL</label><input id="ai-url"></div>
-            <div><label for="ai-model">모델</label><input id="ai-model"></div>
-            <div><label for="ai-temp">temperature (0~1)</label><input id="ai-temp" type="number" min="0" max="1" step="0.05"></div>
-            <div><label for="ai-maxtok">max_tokens</label><input id="ai-maxtok" type="number" min="256" max="16384" step="256"></div>
+            <div class="ai-url-field"><label for="ai-url2">요청 URL</label><input id="ai-url2"></div>
+            <div><label for="ai-model2">모델</label><input id="ai-model2"></div>
+            <div><label for="ai-temp2">temperature (0~1)</label><input id="ai-temp2" type="number" min="0" max="1" step="0.05"></div>
+            <div><label for="ai-maxtok2">max_tokens</label><input id="ai-maxtok2" type="number" min="256" max="16384" step="256"></div>
           </div>
           <p class="count">사내망에서만 동작합니다. 설정은 이 브라우저에만 저장됩니다.</p>
         </details>
-        <p class="count" id="save-folder-status"></p>
+        <p class="count" id="save-folder-status2"></p>
       </div>
-      <div class="doc" id="doc">
+      <div class="doc" id="doc2">
         <h3>서식을 선택하세요</h3>
         <p class="doc-sub">왼쪽 목록에서 서식을 고르면 구조와 기재 안내가 표시됩니다.</p>
       </div>
@@ -246,11 +304,12 @@
 을: (주)새로움테크 (대표자 박새로움) (인)
 </script>
 
-<script src="vendor/docx.umd.js?v=10"></script>
-<script src="vendor/jszip.min.js?v=10"></script>
-<script src="vendor/hwpx_assets.js?v=10"></script>
-<script src="data/index.js?v=10"></script>
-<script src="data/templates.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="vendor/docx.umd.js?v=11"></script>
+<script src="vendor/jszip.min.js?v=11"></script>
+<script src="vendor/hwpx_assets.js?v=11"></script>
+<script src="data/index.js?v=11"></script>
+<script src="data/templates.js?v=11"></script>
+<script src="data/types.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

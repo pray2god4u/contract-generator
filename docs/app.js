@@ -4,6 +4,7 @@
   var G = typeof globalThis !== "undefined" ? globalThis : window;
   var IDX = G.CAT_INDEX;
   var TPL = (G.CAT_TEMPLATES || {}).templates || [];
+  var TIDX = G.TYPE_INDEX || { types: [], total: IDX ? IDX.records.length : 0 };
   var docxLib = typeof window !== "undefined" ? window.docx : require("./vendor/docx.umd.js");
   var JSZipLib = typeof window !== "undefined" ? window.JSZip : require("./vendor/jszip.min.js");
   var ASSETS = G.HWPX_ASSETS;
@@ -29,8 +30,8 @@
   function init() {
     var s = IDX.stats || {};
     var metrics = [
-      { b: fmt(s.total || IDX.records.length), span: "색인된 서식 문서" },
-      { b: Object.keys(IDX.categories).length, span: "대분류" },
+      { b: fmt(TIDX.total || IDX.records.length), span: "원본 서식 문서" },
+      { b: TIDX.types.length || "86", span: "문서 유형 (대표 서식)" },
       { b: TPL.length, span: "구조 템플릿" },
       { b: "3", span: "저장 형식 (DOCX·HWPX·TXT)" }
     ];
@@ -49,6 +50,34 @@
       $(id).addEventListener("input", render);
       $(id).addEventListener("change", render);
     });
+    var av = $("btn-all-variants");
+    if (av) av.addEventListener("click", showVariants);
+    var bt = $("btn-back-types");
+    if (bt) bt.addEventListener("click", showTypes);
+    ["q2", "mc2", "sc2", "ds2"].forEach(function (id) {
+      var el = $(id);
+      if (el) {
+        el.addEventListener("input", renderVariants);
+        el.addEventListener("change", renderVariants);
+      }
+    });
+    var mcSel2 = $("mc2");
+    if (mcSel2) {
+      Object.keys(IDX.categories).sort().forEach(function (mc) {
+        var o = document.createElement("option");
+        o.value = mc; o.textContent = mc;
+        mcSel2.appendChild(o);
+      });
+      mcSel2.addEventListener("change", function () {
+        var scSel2 = $("sc2");
+        scSel2.innerHTML = '<option value="">전체</option>';
+        Object.keys(IDX.categories[mcSel2.value] || {}).sort().forEach(function (sc) {
+          var o = document.createElement("option");
+          o.value = sc; o.textContent = sc;
+          scSel2.appendChild(o);
+        });
+      });
+    }
     $("btn-generate").addEventListener("click", generate);
     $("btn-ai").addEventListener("click", aiGenerate);
     $("btn-save").addEventListener("click", saveDoc);
@@ -355,7 +384,8 @@
     var messages = buildAiPrompt(rec, state.skeleton, state.vals);
     var btn = $("btn-ai");
     btn.disabled = true;
-    $("doc").innerHTML = "<h3>AI 초안 생성 중…</h3><p class='doc-sub'>사내 GenAI(" + esc(cfg.model) +
+    var docEl = $(activeDocId());
+    docEl.innerHTML = "<h3>AI 초안 생성 중…</h3><p class='doc-sub'>사내 GenAI(" + esc(cfg.model) +
       ")가 조문을 작성하고 있어요. 최대 수십 초가 걸릴 수 있습니다.</p><pre class='ai-stream' id='ai-stream'></pre>";
     var started = Date.now();
     callLLM(cfg, messages, function (partial) {
@@ -378,15 +408,20 @@
         isContract: rec.ds !== "71835"
       };
       renderModel();
+      renderModelTo("doc2", state.model);
       toast("AI 초안 생성 완료! 문서 파일로 저장할 수 있어요.");
     }).catch(function (e) {
       btn.disabled = false;
-      $("doc").innerHTML = "<h3>AI 생성 실패</h3><p class='hint'>" + esc(e.message) +
+      docEl.innerHTML = "<h3>AI 생성 실패</h3><p class='hint'>" + esc(e.message) +
         "</p><p class='hint'>사내망에서 접속했는지, AI 연결 설정의 요청 URL이 맞는지 확인하세요. 「초안 생성」(규칙 기반)은 계속 사용할 수 있습니다.</p>";
     });
   }
 
   /* ---------- 탭 전환 ---------- */
+  function activeDocId() {
+    var bv = $("browse-variants");
+    return (bv && !bv.hidden) ? "doc2" : "doc";
+  }
   function initTabs() {
     var tabs = [["browse", "nav-browse"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
     tabs.forEach(function (t) {
@@ -400,6 +435,8 @@
           var nav = $(u[1]);
           if (nav) nav.classList.toggle("active", u[0] === t[0]);
         });
+        var bv = $("browse-variants");
+        if (bv) bv.hidden = (t[0] !== "browse") ? true : bv.hidden;
         if (t[0] === "mybox") renderMyBox();
         window.scrollTo(0, 0);
       });
@@ -446,6 +483,8 @@
     btn.addEventListener("click", function () {
       select(r.id);
       document.querySelector("#browse").hidden = false;
+      var bv = $("browse-variants");
+      if (bv) bv.hidden = true;
       ["review", "instant", "mybox", "guide"].forEach(function (id) { $(id).hidden = true; });
       $("nav-browse").classList.add("active");
       ["nav-review", "nav-instant", "nav-mybox", "nav-guide"].forEach(function (id) { $(id).classList.remove("active"); });
@@ -655,6 +694,8 @@
       var nav = $(t[1]);
       if (nav) nav.classList.toggle("active", t[0] === "browse");
     });
+    var bv = $("browse-variants");
+    if (bv) bv.hidden = true;
     $("fields-panel").hidden = false;
     window.scrollTo(0, 0);
     toast("서식 탐색 탭의 문서 영역에서 편집·저장할 수 있습니다.");
@@ -667,15 +708,15 @@
   function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
 
   /* ---------- 검색·목록 ---------- */
-  function filtered() {
+  function typeFiltered() {
     var q = $("q").value.trim().toLowerCase();
     var mc = $("mc").value, sc = $("sc").value, ds = $("ds").value;
-    return IDX.records.filter(function (r) {
-      if (mc && r.mc !== mc) return false;
-      if (sc && r.sc !== sc) return false;
-      if (ds && r.ds !== ds) return false;
+    return TIDX.types.filter(function (t) {
+      if (mc && t.mc !== mc) return false;
+      if (sc && t.sc !== sc) return false;
+      if (ds && t.ds !== ds) return false;
       if (q) {
-        var hay = (r.t + " " + r.law + " " + r.dc + " " + r.sc).toLowerCase();
+        var hay = (t.dc + " " + t.law + " " + t.sc + " " + t.mc).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
@@ -697,15 +738,17 @@
     if (prevSc && mc && (IDX.categories[mc] || {})[prevSc] != null) {
       scSel.value = prevSc; /* 대분류가 바뀌지 않았다면 선택 유지 */
     }
-    var rows = filtered();
-    $("count").textContent = "총 " + fmt(rows.length) + "건" + (rows.length > 100 ? " · 100건만 표시" : "");
-    var list = rows.slice(0, 100).map(function (r) {
-      var hasTpl = tplById[r.id] ? " · <span class='badge purple'>구조템플릿</span>" : "";
-      var fav = isFav(r.id) ? "<span class='fav on' data-fav='" + esc(r.id) + "' title='즐겨찾기 해제'>★</span>" : "<span class='fav' data-fav='" + esc(r.id) + "' title='즐겨찾기'>☆</span>";
-      return '<div class="result-item" data-id="' + esc(r.id) + '"><b>' + fav + esc(r.t) + "</b>" +
-        "<div class='meta'><span class='badge'>" + esc(r.ds) + "</span>" +
-        "<span>" + esc(r.mc) + " › " + esc(r.sc) + " › " + esc(r.dc) + "</span>" +
-        "<span>" + esc(r.law || "법령 미명시") + " · " + r.nsec + "개 구획</span>" + hasTpl + "</div></div>";
+    var rows = typeFiltered();
+    $("count").textContent = "문서 유형 총 " + fmt(rows.length) + "종" +
+      " · 원본 " + fmt(rows.reduce(function (a, t) { return a + t.variants; }, 0)) + "건";
+    var list = rows.map(function (t) {
+      var rec = recById(t.rep) || { id: t.rep, t: t.dc, mc: t.mc, sc: t.sc, ds: t.ds, law: t.law, nsec: t.nsec };
+      var hasTpl = t.hasTpl ? " · <span class='badge purple'>구조템플릿</span>" : "";
+      var fav = isFav(t.rep) ? "<span class='fav on' data-fav='" + esc(t.rep) + "' title='즐겨찾기 해제'>★</span>": "<span class='fav' data-fav='" + esc(t.rep) + "' title='즐겨찾기'>☆</span>";
+      return '<div class="result-item" data-id="' + esc(t.rep) + '"><b>' + fav + esc(t.dc) + "</b>" +
+        "<div class='meta'><span class='badge'>" + (t.ds === "71834" ? "계약" : "계약외") + "</span>" +
+        "<span>" + esc(t.mc) + " › " + esc(t.sc) + "</span>" +
+        "<span>변형 " + fmt(t.variants) + "건 · " + esc(t.law || "법령 미명시") + "</span>" + hasTpl + "</div></div>";
     }).join("");
     $("results").innerHTML = list || "<p class='count'>검색 결과가 없습니다.</p>";
     Array.prototype.forEach.call($("results").children, function (el) {
@@ -714,6 +757,58 @@
         if (favEl) { toggleFav(favEl); return; } /* 별 클릭은 선택하지 않음 */
         select(el.getAttribute("data-id"));
       });
+    });
+  }
+
+  /* ---------- 변형 전체 보기 (18,436건 원본 목록) ---------- */
+  function showVariants() {
+    $("browse").hidden = true;
+    $("browse-variants").hidden = false;
+    window.scrollTo(0, 0);
+    renderVariants();
+  }
+  function showTypes() {
+    $("browse-variants").hidden = true;
+    $("browse").hidden = false;
+    window.scrollTo(0, 0);
+  }
+  function variantFiltered() {
+    var q = $("q2").value.trim().toLowerCase();
+    var mc = $("mc2").value, sc = $("sc2").value, ds = $("ds2").value;
+    return IDX.records.filter(function (r) {
+      if (mc && r.mc !== mc) return false;
+      if (sc && r.sc !== sc) return false;
+      if (ds && r.ds !== ds) return false;
+      if (q) {
+        var hay = (r.t + " " + r.law + " " + r.dc + " " + r.sc).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function renderVariants() {
+    var rows = variantFiltered();
+    $("count2").textContent = "총 " + fmt(rows.length) + "건" + (rows.length > 200 ? " · 200건만 표시" : "");
+    var list = rows.slice(0, 200).map(function (r) {
+      var hasTpl = tplById[r.id] ? " · <span class='badge purple'>구조템플릿</span>" : "";
+      return '<div class="result-item" data-id="' + esc(r.id) + '"><b>' + esc(r.t) + "</b>" +
+        "<div class='meta'><span class='badge'>" + esc(r.ds) + "</span>" +
+        "<span>" + esc(r.mc) + " › " + esc(r.sc) + " › " + esc(r.dc) + "</span>" +
+        "<span>" + esc(r.law || "법령 미명시") + " · " + r.nsec + "개 구획</span>" + hasTpl + "</div></div>";
+    }).join("");
+    $("results2").innerHTML = list || "<p class='count'>검색 결과가 없습니다.</p>";
+    Array.prototype.forEach.call($("results2").children, function (el) {
+      el.addEventListener("click", function () {
+        selectVariant(el.getAttribute("data-id"));
+      });
+    });
+  }
+  function selectVariant(id) {
+    select(id);
+    $("fields-panel2").hidden = false;
+    renderModelTo("doc2", state.model);
+    Array.prototype.forEach.call($("results2").children, function (el) {
+      el.classList.toggle("active", el.getAttribute("data-id") === id);
     });
   }
 
@@ -921,11 +1016,16 @@ return "계약조건";
     state.filled = true;
     state.model = buildDocModel(state.selected, state.skeleton, state.vals, true);
     renderModel();
+    renderModelTo("doc2", state.model);
     toast("초안이 생성되었습니다. 문서 파일로 저장할 수 있어요.");
   }
 
   function renderModel() {
-    var m = state.model;
+    renderModelTo("doc", state.model);
+  }
+  function renderModelTo(docId, m) {
+    var target = $(docId);
+    if (!target || !m) return;
     var html = "<h3>" + esc(m.title) + (state.filled ? " (초안)" : " — 구조 미리보기") + "</h3>";
     html += "<p class='doc-sub'>" + esc(m.metaLine) + "</p>";
     m.paras.forEach(function (p) {
@@ -933,7 +1033,7 @@ return "계약조건";
       else if (p.kind === "meta") html += "<p class='hint'>" + esc(p.text) + "</p>";
       else html += "<p class='sec" + (p.right ? " sec-right" : "") + "'>" + esc(p.text) + "</p>";
     });
-    $("doc").innerHTML = html;
+    target.innerHTML = html;
   }
 
   /* ---------- DOCX 생성 ---------- */
