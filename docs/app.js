@@ -5,6 +5,7 @@
   var IDX = G.CAT_INDEX;
   var TPL = (G.CAT_TEMPLATES || {}).templates || [];
   var TIDX = G.TYPE_INDEX || { types: [], total: IDX ? IDX.records.length : 0 };
+  var ATLAS = G.ATLAS || null; /* 조항 지도 (v5.0) */
   var docxLib = typeof window !== "undefined" ? window.docx : require("./vendor/docx.umd.js");
   var JSZipLib = typeof window !== "undefined" ? window.JSZip : require("./vendor/jszip.min.js");
   var ASSETS = G.HWPX_ASSETS;
@@ -92,6 +93,7 @@
     restoreAiCfg();
     initTabs();
     initGuide();
+    initAtlas();
     initMyBox();
     render();
   }
@@ -423,7 +425,7 @@
     return (bv && !bv.hidden) ? "doc2" : "doc";
   }
   function initTabs() {
-    var tabs = [["browse", "nav-browse"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
+    var tabs = [["browse", "nav-browse"], ["atlas", "nav-atlas"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
     tabs.forEach(function (t) {
       var link = $(t[1]);
       if (!link) return;
@@ -687,7 +689,7 @@
   }
   function openInstantInBrowse() {
     $("nav-browse").listeners && null; /* no-op guard */
-    var tabs = [["browse", "nav-browse"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
+    var tabs = [["browse", "nav-browse"], ["atlas", "nav-atlas"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
     tabs.forEach(function (t) {
       var sec = $(t[0]);
       if (sec) sec.hidden = (t[0] !== "browse");
@@ -1245,7 +1247,84 @@ return "계약조건";
       buildAiPrompt: buildAiPrompt, callLLM: callLLM, parseAiDraft: parseAiDraft,
       buildReviewPrompt: buildReviewPrompt,
       buildInstantPrompt: buildInstantPrompt, parseInstantJson: parseInstantJson,
-      buildSignBlock: buildSignBlock, buildAttachBlock: buildAttachBlock
+      buildSignBlock: buildSignBlock, buildAttachBlock: buildAttachBlock,
+      initAtlas: initAtlas, renderAtlas: renderAtlas, runAtlasCheck: runAtlasCheck
     };
+  }
+
+
+  function initAtlas() {
+    if (!ATLAS) return;
+    var sel = $("atlas-type");
+    if (!sel) return;
+    var dcs = Object.keys(ATLAS.types).sort(function (a, b) {
+      return ATLAS.types[b].docs - ATLAS.types[a].docs;
+    });
+    sel.innerHTML = "";
+    dcs.forEach(function (dc) {
+      var o = document.createElement("option");
+      o.value = dc;
+      o.textContent = dc + " (" + ATLAS.types[dc].docs + "건)";
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", renderAtlas);
+    $("btn-atlas-check").addEventListener("click", runAtlasCheck);
+    $("btn-atlas-sample").addEventListener("click", function () {
+      var s = document.getElementById("sample-contract-text");
+      $("atlas-input").value = s ? s.textContent : "";
+      runAtlasCheck();
+    });
+    renderAtlas();
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function renderAtlas() {
+    var sel = $("atlas-type");
+    var dc = sel.value;
+    if (!dc && sel.children.length) dc = sel.children[0].value; /* 목 DOM·일부 브라우저 폴백 */
+    var t = ATLAS.types[dc];
+    if (!t) return;
+    $("atlas-meta").textContent = "표본 " + t.docs + "건 · 평균 " + t.avgSec + "개 조문 · 조항 " + t.clauses.length + "종";
+    var max = t.clauses.length ? t.clauses[0][1] : 1;
+    var html = t.clauses.slice(0, 20).map(function (c) {
+      var pct = Math.round(c[1] / t.docs * 100);
+      var w =Math.max(4, Math.round(c[1] / max * 100));
+      return '<div class="atlas-row"><span class="atlas-label">' + esc(c[0]) + '</span>' +
+        '<div class="atlas-track"><div class="atlas-bar" style="width:' + w + '%"></div></div>' +
+        '<span class="atlas-pct">' + pct + '%</span></div>';
+    }).join("");
+    $("atlas-bars").innerHTML = html;
+  }
+
+  function runAtlasCheck() {
+    var sel = $("atlas-type");
+    var dc = sel.value;
+    if (!dc && sel.children.length) dc = sel.children[0].value;
+    var t = ATLAS.types[dc];
+    var txt = ($("atlas-input").value || "").replace(/\s+/g, " ");
+    var box = $("atlas-result");
+    if (!t) { box.innerHTML = "<p>유형 데이터가 없습니다.</p>"; return; }
+    if (!txt) { box.innerHTML = "<p>계약서 전문을 붙여넣거나 샘플 버튼을 누르세요.</p>"; return; }
+    var missing = [], present = [];
+    t.clauses.forEach(function (c) {
+      var kw = c[0].replace(/\s+/g, "");
+      if (txt.indexOf(kw) > -1) present.push(c[0]);
+      else if (c[1] / t.docs >= 0.5) missing.push(c);
+    });
+    var html = "<h3>진단 결과 — " + esc(dc) + "</h3>";
+    html += "<p>포함된 조항 <b>" + present.length + "</b>개 · 이 유형 문서의 50% 이상에 있는데 <b>빠진 조항 " + missing.length + "</b>개</p>";
+    if (missing.length) {
+      html += "<p><b>검토 권장 조항</b> (출현율 순)</p><ul>";
+      missing.slice(0, 10).forEach(function (c) {
+        html += "<li>" + esc(c[0]) + " — 이 유형 문서의 " + Math.round(c[1] / t.docs * 100) + "%에 존재</li>";
+      });
+      html += "</ul>";
+    } else {
+      html += "<p>✓ 주요 조항이 모두 포함되어 있습니다.</p>";
+    }
+    box.innerHTML = html;
   }
 })();

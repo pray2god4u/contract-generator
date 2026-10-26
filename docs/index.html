@@ -4,16 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v4.6</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v5.0</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
     <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
+    <a href="#atlas" id="nav-atlas">조항 지도</a>
     <a href="#review" id="nav-review">AI 계약서 검토</a>
     <a href="#instant" id="nav-instant">AI 바로 생성</a>
     <a href="#mybox" id="nav-mybox">나만의 서식함</a>
@@ -81,6 +82,27 @@
       </details>
       <p class="count" id="save-folder-status"></p>
       <div class="doc-box" id="doc"></div>
+    </div>
+  </section>
+
+  <section id="atlas" class="layout" hidden>
+    <div class="panel">
+      <h2>조항 지도</h2>
+      <p class="count">18,436건 원본을 분석해 유형별로 <b>실제 가장 많이 쓰는 조항</b>을 뽑았습니다. 문서 유형을 고르면 조항 출현율 순위와, 내 계약서에 빠진 조항을 진단할 수 있습니다.</p>
+      <label for="atlas-type">문서 유형</label>
+      <select id="atlas-type"></select>
+      <p class="count" id="atlas-meta"></p>
+      <div id="atlas-bars"></div>
+    </div>
+    <div class="panel">
+      <h2>내 계약서 진단</h2>
+      <p class="count">왼쪽에서 유형을 고른 뒤 계약서 전문을 붙여넣으면, 이 유형 문서의 대다수에 있는데 <b>빠진 조항</b>을 찾아줍니다. 원문을 보내지 않고 브라우저 안에서만 분석합니다.</p>
+      <textarea id="atlas-input" rows="10" placeholder="계약서 전문을 붙여넣으세요"></textarea>
+      <div class="toolbar">
+        <button class="primary" id="btn-atlas-check">빠진 조항 진단</button>
+        <button id="btn-atlas-sample">샘플 계약서로 체험</button>
+      </div>
+      <div class="doc-box" id="atlas-result"></div>
     </div>
   </section>
 
@@ -304,12 +326,13 @@
 을: (주)새로움테크 (대표자 박새로움) (인)
 </script>
 
-<script src="vendor/docx.umd.js?v=11"></script>
-<script src="vendor/jszip.min.js?v=11"></script>
-<script src="vendor/hwpx_assets.js?v=11"></script>
-<script src="data/index.js?v=11"></script>
-<script src="data/templates.js?v=11"></script>
-<script src="data/types.js?v=11"></script>
-<script src="app.js?v=11"></script>
+<script src="vendor/docx.umd.js?v=12"></script>
+<script src="vendor/jszip.min.js?v=12"></script>
+<script src="vendor/hwpx_assets.js?v=12"></script>
+<script src="data/index.js?v=12"></script>
+<script src="data/templates.js?v=12"></script>
+<script src="data/types.js?v=12"></script>
+<script src="data/atlas.js?v=12"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
