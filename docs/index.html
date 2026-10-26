@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>계약서 초안 생성기 · AI Hub 법률 문서 서식</title>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <header>
   <a class="brand" href="./">
     <div class="logo">계</div>
-    <span>계약서 초안 생성기 <span class="ver">v5.0</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
+    <span>계약서 초안 생성기 <span class="ver">v5.1</span><br><small class="brand-sub">CONTRACT DRAFT GENERATOR</small></span>
   </a>
   <nav>
     <a href="#browse" id="nav-browse" class="active">서식 탐색</a>
@@ -88,21 +88,11 @@
   <section id="atlas" class="layout" hidden>
     <div class="panel">
       <h2>조항 지도</h2>
-      <p class="count">18,436건 원본을 분석해 유형별로 <b>실제 가장 많이 쓰는 조항</b>을 뽑았습니다. 문서 유형을 고르면 조항 출현율 순위와, 내 계약서에 빠진 조항을 진단할 수 있습니다.</p>
+      <p class="count">18,436건 원본을 분석해 유형별로 <b>실제 가장 많이 쓰는 조항</b>을 뽑았습니다. 초안 작성 전에 이 유형의 표준 구성을 참고하세요. <b>빠진 조항 진단</b>은 「AI 계약서 검토」 탭 하단에서 할 수 있습니다.</p>
       <label for="atlas-type">문서 유형</label>
       <select id="atlas-type"></select>
       <p class="count" id="atlas-meta"></p>
       <div id="atlas-bars"></div>
-    </div>
-    <div class="panel">
-      <h2>내 계약서 진단</h2>
-      <p class="count">왼쪽에서 유형을 고른 뒤 계약서 전문을 붙여넣으면, 이 유형 문서의 대다수에 있는데 <b>빠진 조항</b>을 찾아줍니다. 원문을 보내지 않고 브라우저 안에서만 분석합니다.</p>
-      <textarea id="atlas-input" rows="10" placeholder="계약서 전문을 붙여넣으세요"></textarea>
-      <div class="toolbar">
-        <button class="primary" id="btn-atlas-check">빠진 조항 진단</button>
-        <button id="btn-atlas-sample">샘플 계약서로 체험</button>
-      </div>
-      <div class="doc-box" id="atlas-result"></div>
     </div>
   </section>
 
@@ -116,6 +106,18 @@
         <button id="btn-review-clear">지우기</button>
       </div>
       <p class="count" id="review-status"></p>
+      <details class="ai-config" id="atlas-check-box">
+        <summary>📊 데이터 기반 체크 — 이 유형 문서의 50% 이상에 있는데 빠진 조항 (AI 없이 동작)</summary>
+        <p class="count">18,436건 통계 기준입니다. 유형을 고르고 아래 버튼을 누르면 브라우저 안에서 즉시 검사합니다. <a href="#atlas" id="link-atlas">조항 지도</a>에서 유형별 출현율 전체를 볼 수 있습니다.</p>
+        <div class="field-grid">
+          <div class="extra-field"><label for="atlas-type2">문서 유형</label><select id="atlas-type2"></select></div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="btn-atlas-check">빠진 조항 검사</button>
+          <button id="btn-atlas-sample">검토 입력란에 샘플 채우기</button>
+        </div>
+        <div class="doc-box" id="atlas-result"></div>
+      </details>
     </div>
     <div class="panel" id="review-result">
       <h2>검토 결과</h2>
@@ -189,7 +191,8 @@
         <li>오른쪽 「기본 정보 입력」에 갑·을·금액·기간을 입력하고 <b>「초안 생성」</b>(규칙 기반 — 어디서든 동작) 또는 <b>「✨ AI 초안 생성」</b>(사내망)을 누릅니다.</li>
         <li>저장 형식(DOCX·HWPX·TXT)을 고르고 <b>「문서 파일 저장」</b> — 처음 1회만 「저장 폴더 연결」로 폴더를 지정하면 이후 그 폴더에 바로 저장됩니다.</li>
         <li>AI 기능은 상단 탭의 <b>「AI 계약서 검토」·「AI 바로 생성」</b>에서 사용합니다. <span class="badge amber">사내망 전용</span></li>
-        <li><b>조항 지도</b>에서 유형을 고르면 18,436건 분석 기반 <b>조항 출현율</b>과 <b>빠진 조항 진단</b>을 볼 수 있습니다. <span class="badge purple">v5.0 신규</span></li>
+        <li><b>조항 지도</b>에서 유형을 고르면 18,436건 분석 기반 <b>조항 출현율</b>을 참고할 수 있습니다. <span class="badge purple">v5.0 신규</span></li>
+        <li><b>AI 계약서 검토</b> 탭 하단의 <b>「데이터 기반 체크」</b>에서 AI 없이도 빠진 조항을 즉시 검사할 수 있습니다. <span class="badge purple">v5.1 신규</span></li>
       </ol>
 
       <h3 class="g-h">📋 메뉴별 사용법·테스트</h3>
@@ -198,7 +201,8 @@
         <tr><td><b>서식 탐색</b></td><td>검색어·대분류·중분류·데이터셋(71834 계약 / 71835 계약 외)로 18,436건에서 서식을 찾습니다. <span class="badge purple">구조템플릿</span> 배지는 실제 원문 구조를 추출한 52개 서식입니다.</td><td>검색창에 <code>임대차</code> 입력 → 목록 클릭 → 입력 폼·구조 미리보기 표시 확인</td></tr>
         <tr><td><b>AI 계약서 검토</b></td><td>계약서 전문을 붙여넣고(50자 이상) 「🔍 AI 검토 시작」 — [요약]/[리스크]/[누락]/[종합] 형식으로 분석합니다.</td><td>아래 「샘플 계약서 불러와서 검토 테스트」 버튼으로 바로 실행</td></tr>
         <tr><td><b>AI 바로 생성</b></td><td>자연어 한 줄(10자 이상)로 요청하면 AI가 문서 유형을 판단하고 조항 6~10개 초안을 작성합니다.</td><td>아래 프롬프트의 「이 프롬프트로 생성 →」 버튼으로 바로 실행</td></tr>
-        <tr><td><b>조항 지도</b> <span class="badge purple">v5.0</span></td><td>18,436건 원본을 분석한 <b>유형별 조항 출현율 TOP 20</b>을 바 차트로 보여줍니다. 우측 진단기에 계약서를 붙여넣으면 이 유형 문서의 50% 이상에 있는데 <b>빠진 조항</b>을 찾아줍니다. 브라우저 안에서만 분석하며 원문은 전송되지 않습니다.</td><td>유형 <code>비밀유지계약서</code> 선택 → 바 차트 확인 → 「샘플 계약서로 체험」 클릭 → 빠진 조항 진단 결과 확인</td></tr>
+        <tr><td><b>조항 지도</b> <span class="badge purple">v5.0</span></td><td>18,436건 원본을 분석한 <b>유형별 조항 출현율 TOP 20</b>을 바 차트로 보여줍니다. 초안 작성 전 표준 구성 참고용입니다.</td><td>유형 <code>비밀유지계약서</code> 선택 → 바 차트에서 표준 조항 확인</td></tr>
+        <tr><td><b>데이터 기반 체크</b> <span class="badge purple">v5.1</span></td><td>AI 계약서 검토 탭 하단에서 <b>AI 없이</b> 빠진 조항을 검사합니다. 이 유형 문서의 50% 이상에 있는데 내 계약서에 없는 조항을 찾아줍니다. 사내망 밖에서도 동작합니다.</td><td>검토 탭에서 유형 선택 → 계약서 붙여넣기 → 「빠진 조항 검사」 클릭</td></tr>
         <tr><td><b>나만의 서식함</b></td><td>서식 목록에서 ☆ 클릭 → 즐겨찾기(★). 저장하면 작성 이력에 자동 기록(최대 30건). 특약 칩 클릭 시 입력란에 바로 들어갑니다.</td><td>목록에서 ☆ 클릭 → 서식함 탭에서 확인 / 특약 추가 후 서식 선택 상태에서 칩 클릭</td></tr>
       </table>
 
@@ -329,13 +333,13 @@
 을: (주)새로움테크 (대표자 박새로움) (인)
 </script>
 
-<script src="vendor/docx.umd.js?v=12"></script>
-<script src="vendor/jszip.min.js?v=12"></script>
-<script src="vendor/hwpx_assets.js?v=12"></script>
-<script src="data/index.js?v=12"></script>
-<script src="data/templates.js?v=12"></script>
-<script src="data/types.js?v=12"></script>
-<script src="data/atlas.js?v=12"></script>
-<script src="app.js?v=12"></script>
+<script src="vendor/docx.umd.js?v=13"></script>
+<script src="vendor/jszip.min.js?v=13"></script>
+<script src="vendor/hwpx_assets.js?v=13"></script>
+<script src="data/index.js?v=13"></script>
+<script src="data/templates.js?v=13"></script>
+<script src="data/types.js?v=13"></script>
+<script src="data/atlas.js?v=13"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>

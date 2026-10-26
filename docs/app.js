@@ -94,6 +94,17 @@
     initTabs();
     initGuide();
     initAtlas();
+    var la = $("link-atlas");
+    if (la) la.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      var tabs = [["browse", "nav-browse"], ["atlas", "nav-atlas"], ["review", "nav-review"], ["instant", "nav-instant"], ["mybox", "nav-mybox"], ["guide", "nav-guide"]];
+      tabs.forEach(function (t) {
+        var sec = $(t[0]);
+        if (sec) sec.hidden = (t[0] !== "atlas");
+        var nav = $(t[1]);
+        if (nav) nav.classList.toggle("active", t[0] === "atlas");
+      });
+    });
     initMyBox();
     render();
   }
@@ -1256,25 +1267,34 @@ return "계약조건";
   function initAtlas() {
     if (!ATLAS) return;
     var sel = $("atlas-type");
-    if (!sel) return;
+    var sel2 = $("atlas-type2");
+    if (!sel && !sel2) return;
     var dcs = Object.keys(ATLAS.types).sort(function (a, b) {
       return ATLAS.types[b].docs - ATLAS.types[a].docs;
     });
-    sel.innerHTML = "";
-    dcs.forEach(function (dc) {
-      var o = document.createElement("option");
-      o.value = dc;
-      o.textContent = dc + " (" + ATLAS.types[dc].docs + "건)";
-      sel.appendChild(o);
+    [sel, sel2].forEach(function (s) {
+      if (!s) return;
+      s.innerHTML = "";
+      dcs.forEach(function (dc) {
+        var o = document.createElement("option");
+        o.value = dc;
+        o.textContent = dc + " (" + ATLAS.types[dc].docs + "건)";
+        s.appendChild(o);
+      });
     });
-    sel.addEventListener("change", renderAtlas);
-    $("btn-atlas-check").addEventListener("click", runAtlasCheck);
-    $("btn-atlas-sample").addEventListener("click", function () {
-      var s = document.getElementById("sample-contract-text");
-      $("atlas-input").value = s ? s.textContent : "";
-      runAtlasCheck();
-    });
-    renderAtlas();
+    if (sel) {
+      sel.addEventListener("change", renderAtlas);
+      renderAtlas();
+    }
+    if (sel2) {
+      sel2.addEventListener("change", function () { /* 진단은 버튼 클릭 시 실행 */ });
+      $("btn-atlas-check").addEventListener("click", runAtlasCheck);
+      $("btn-atlas-sample").addEventListener("click", function () {
+        var s = document.getElementById("sample-contract-text");
+        $("review-input").value = s ? s.textContent : "";
+        runAtlasCheck();
+      });
+    }
   }
 
   function esc(s) {
@@ -1300,11 +1320,11 @@ return "계약조건";
   }
 
   function runAtlasCheck() {
-    var sel = $("atlas-type");
+    var sel = $("atlas-type2") || $("atlas-type");
     var dc = sel.value;
     if (!dc && sel.children.length) dc = sel.children[0].value;
     var t = ATLAS.types[dc];
-    var txt = ($("atlas-input").value || "").replace(/\s+/g, " ");
+    var txt = ($("review-input").value || "").replace(/\s+/g, " ");
     var box = $("atlas-result");
     if (!t) { box.innerHTML = "<p>유형 데이터가 없습니다.</p>"; return; }
     if (!txt) { box.innerHTML = "<p>계약서 전문을 붙여넣거나 샘플 버튼을 누르세요.</p>"; return; }
